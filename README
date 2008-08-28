@@ -1,1 +1,22 @@
+
+CONTENTS OF THIS FILE
+---------------------
+
+ * Introduction
+ * Installation
+ * Issues
+
+INTRODUCTION
+------------
+
 Just my personal .emacs and associated lisp packages. Since I switch between computers and platforms a lot, I need an efficient way to maintain my environment.
+
+INSTALLATION
+------------
+
+Synchronize to your .emacs.d?
+
+ISSUES
+------
+
+Dunno yet.
