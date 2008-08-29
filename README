@@ -14,7 +14,10 @@ Just my personal .emacs and associated lisp packages. Since I switch between com
 INSTALLATION
 ------------
 
-Synchronize to your .emacs.d?
+1. Checkout repository somewhere onto my machine.
+2. 'cd' into the directory where INSTALL.sh is.
+3. If I'm not me then don't do the next step, since this .emacs probably only makes sense for me.
+4. Run INSTALL.sh, taking care to understand it's going to nuke the .emacs and .emacs.d that's already there.
 
 ISSUES
 ------
