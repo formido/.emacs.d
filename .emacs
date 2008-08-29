@@ -1,16 +1,14 @@
 ;; how should code conditioned on platform be managed? 
 
-;; start emacs server so I can hack os x to start files from the Finder
-;; probobably this will come in handy for other stuff in the future too
-(server-start)
+;; Enable backtrace
+;; (setq debug-on-error t)
 
-(tool-bar-mode 0)
+;; personal customizations
+(require 'mwt-global)
 
+;; Platform specific configurations
 (cond
  ((string-match "powerpc" system-configuration)
-  ;; set up load-path
-  (setq load-path
-	(append (list nil "/Users/formido/.emacs.d") load-path))
 
   ;; Set up scheme -------------------------------------------------------------
   (setq scheme-program-name "~/bin/plt/bin/mzscheme")
@@ -114,13 +112,6 @@
 
   ;; ---------------------------------------------------------------------------
 
-  (custom-set-variables
-   ;; custom-set-variables was added by Custom.
-   ;; If you edit it by hand, you could mess it up, so be careful.
-   ;; Your init file should contain only one such instance.
-   ;; If there is more than one, they won't work right.
-   '(mouse-wheel-mode t nil (mwheel))
-   '(transient-mark-mode (quote identity)))
   (custom-set-faces
    ;; custom-set-faces was added by Custom.
    ;; If you edit it by hand, you could mess it up, so be careful.
