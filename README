@@ -5,6 +5,7 @@ CONTENTS OF THIS FILE
  * Introduction
  * Installation
  * Issues
+ * TODO
 
 INTRODUCTION
 ------------
@@ -22,4 +23,11 @@ INSTALLATION
 ISSUES
 ------
 
-None at this time.
+None.
+
+TODO
+----
+
+ * Move third party packages into subdirectory
+ * Split up platform dependent customizations
+ * Start adding some of the cool stuff I've seen around
