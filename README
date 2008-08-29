@@ -15,7 +15,7 @@ INSTALLATION
 ------------
 
 1. Checkout repository somewhere onto my machine.
-2. 'cd' into the directory where INSTALL.sh is.
+2. 'cd' into the directory with INSTALL.sh.
 3. If I'm not me then don't do the next step, since this .emacs probably only makes sense for me.
 4. Run INSTALL.sh, taking care to understand it's going to nuke the .emacs and .emacs.d that's already there.
 
