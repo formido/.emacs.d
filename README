@@ -28,6 +28,11 @@ None.
 TODO
 ----
 
- * Move third party packages into subdirectory
- * Split up platform dependent customizations
- * Start adding some of the cool stuff I've seen around
+ * Move third party packages into subdirectory (http://www.emacsblog.org/2007/10/07/declaring-emacs-bankruptcy/)
+ * Split up platform dependent customizations (http://www.emacsblog.org/2007/10/07/declaring-emacs-bankruptcy/)
+ * Start adding some of the cool stuff I've seen around (http://www.emacsblog.org/2007/10/07/declaring-emacs-bankruptcy/)
+ * Installer compiles lisp packages (or add write hook to do this?) (http://www.emacsblog.org/2007/10/07/declaring-emacs-bankruptcy/)
+ * Add keybinding, mouse, and macros to separate file? (http://www.emacsblog.org/2007/10/07/declaring-emacs-bankruptcy/)
+ * Change everything to autoload and eval-after-load (http://www.emacsblog.org/2007/10/07/declaring-emacs-bankruptcy/)
+ * Switch to a symlink for .emacs? (http://www.emacsblog.org/2007/10/07/declaring-emacs-bankruptcy/)
+ * Test for code dependencies (non-lisp) availability (http://www.dotemacs.de/recovery.html)

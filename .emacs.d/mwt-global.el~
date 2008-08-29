@@ -22,9 +22,4 @@
 ;; Stop error bell
 (setq visible-bell t)
 
-;; Make sure parentheses match when writing file
-(add-hook 'emacs-lisp-mode-hook 'my-prefhand--emacs-lisp-mode)
-(defun my-prefhand--emacs-lisp-mode ()
-  (add-hook 'local-write-file-hooks 'check-parens))
-
 (provide 'mwt-global)
