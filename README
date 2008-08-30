@@ -32,7 +32,6 @@ None.
 TODO 
 ----
 
- * Move third party packages into subdirectory[1]
  * Start adding some of the cool stuff I've seen around[1]
  * Add write hook to compile elisp packages[1]
  * Add keybinding, mouse, and macros to separate file?[1]
