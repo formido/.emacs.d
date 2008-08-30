@@ -1,0 +1,21 @@
+;; Object lisp/
+;; SEMANTICDB Tags save file
+(semanticdb-project-database-file "lisp/"
+  :tables (list 
+   (semanticdb-table "safe-load.el"
+    :major-mode 'emacs-lisp-mode
+    :tags '(("safe-load-error-list" variable (:user-visible-flag t) nil [1 105]) ("safe-load" function (:user-visible-flag t :arguments ("file" "&optional" "noerror" "nomessage" "nosuffix")) nil [107 570]) ("safe-load-check" function (:user-visible-flag t) nil [572 812]))
+    :file "safe-load.el"
+    :pointmax 813
+    )
+   (semanticdb-table "erlang-start.el"
+    :major-mode 'emacs-lisp-mode
+    :tags '(("erlang-mode" function (:prototype-flag t :user-visible-flag t) nil [1818 1890]) ("erlang-version" function (:prototype-flag t :user-visible-flag t) nil [1891 1976]) ("erlang-shell" function (:prototype-flag t :user-visible-flag t) nil [1977 2040]) ("run-erlang" function (:prototype-flag t :user-visible-flag t) nil [2041 2102]) ("erlang-compile" function (:prototype-flag t :user-visible-flag t) nil [2104 2186]) ("erlang-man-module" function (:prototype-flag t :user-visible-flag t) nil [2188 2262]) ("erlang-man-function" function (:prototype-flag t :user-visible-flag t) nil [2263 2367]) ("erlang-find-tag" function (:prototype-flag t) nil [2369 2465]) ("erlang-find-tag-other-window" function (:prototype-flag t) nil [2466 2588]) ("let" code nil nil [2664 2929]) ("let" code nil nil [3029 3376]) ("erlang-start" package nil nil [3398 3421]))
+    :file "erlang-start.el"
+    :pointmax 3453
+    )
+   )
+  :file "semantic.cache"
+  :semantic-tag-version "2.0pre4"
+  :semanticdb-version "2.0pre4"
+  )

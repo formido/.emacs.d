@@ -2,9 +2,6 @@
 ;; probobably this will come in handy for other stuff in the future too
 (server-start)
 
-;; function to load files with error checking
-(autoload 'safe-load "safe-load")
-
 ;; Who needs a toolbar?
 (tool-bar-mode 0)
 
@@ -79,7 +76,7 @@
   ;; 	      (define-key erlang-shell-mode-map (car spec) (cadr spec)))))
 
   ;; load regex-tool if available
-  (safe-load "lisp/regex-tool.el")
+  (load "lisp/regex-tool.el")
 
   ;; Set up quack --------------------------------------------------------------
   (require 'quack)

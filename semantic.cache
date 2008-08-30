@@ -1,0 +1,21 @@
+;; Object .emacs.d/
+;; SEMANTICDB Tags save file
+(semanticdb-project-database-file ".emacs.d/"
+  :tables (list 
+     (semanticdb-table "mwt-global.el"
+    :major-mode 'emacs-lisp-mode
+    :tags '(("server-start" code nil nil [145 159]) ("load-library" code nil nil [207 233]) ("tool-bar-mode" code nil nil [259 276]) ("custom-set-variables" code nil nil [330 427]) ("fset" code nil nil [464 493]) ("setq" code nil nil [521 548]) ("setq" code nil nil [569 590]) ("add-hook" code nil nil [641 703]) ("my-prefhand--emacs-lisp-mode" function nil nil [704 794]) ("setq" code nil nil [842 908]) ("setq" code nil nil [909 976]) ("cond" code nil nil [1014 6506]) ("custom-set-variables" code nil nil [6509 7242]) ("custom-set-faces" code nil nil [7243 7486]) ("mwt-global" package nil nil [7488 7509]))
+    :file "mwt-global.el"
+    :pointmax 7509
+    )
+   (semanticdb-table ".emacs"
+    :major-mode 'emacs-lisp-mode
+    :tags '(("add-to-list" code nil nil [91 147]) ("add-to-list" code nil nil [148 209]) ("mwt-global" include nil nil [238 259]) ("load-file" code nil nil [261 292]))
+    :file ".emacs"
+    :pointmax 294
+    )
+   )
+  :file "semantic.cache"
+  :semantic-tag-version "2.0pre4"
+  :semanticdb-version "2.0pre4"
+  )

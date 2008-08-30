@@ -32,11 +32,4 @@ None.
 TODO 
 ----
 
- * Start adding some of the cool stuff I've seen around[1]
- * Add write hook to compile elisp packages[1]
- * Add keybinding, mouse, and macros to separate file?[1]
- * Change everything to autoload and eval-after-load[1]
- * Test for code dependencies (non-lisp) availability[2]
-
-[1] http://www.emacsblog.org/2007/10/07/declaring-emacs-bankruptcy/
-[2] http://www.dotemacs.de/recovery.html
+None.
