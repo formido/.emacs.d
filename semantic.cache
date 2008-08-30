@@ -16,6 +16,12 @@
     :pointmax 67669
     :unmatched-syntax 'nil
     )
+   (semanticdb-table "mwt-global.el"
+    :major-mode 'emacs-lisp-mode
+    :tags '(("server-start" code nil nil [145 159]) ("tool-bar-mode" code nil nil [185 202]) ("add-to-list" code nil nil [245 301]) ("custom-set-variables" code nil nil [355 452]) ("fset" code nil nil [489 518]) ("setq" code nil nil [546 573]) ("setq" code nil nil [594 615]) ("add-hook" code nil nil [666 728]) ("my-prefhand--emacs-lisp-mode" function nil nil [729 819]) ("mwt-global" package nil nil [821 842]))
+    :file "mwt-global.el"
+    :pointmax 842
+    )
    )
   :file "semantic.cache"
   :semantic-tag-version "2.0pre4"
