@@ -9,3 +9,5 @@
 ;; personal customizations
 (require 'mwt-global)
 
+(load-file "lisp/regex-tool" t)
+

@@ -76,22 +76,22 @@
   ;; 	      (define-key erlang-shell-mode-map (car spec) (cadr spec)))))
 
   ;; load regex-tool if available
-  (load "regex-tool" t)
+  (load "lisp/regex-tool.el")
 
   ;; Set up quack --------------------------------------------------------------
   (require 'quack)
   
   ;; Set up ruby-mode ----------------------------------------------------------
-  (autoload 'ruby-mode "ruby-mode/ruby-mode"
+  (autoload 'ruby-mode "lisp/ruby-mode/ruby-mode"
     "Mode for editing ruby source files" t)
   (setq auto-mode-alist
 	(append '(("\\.rb$" . ruby-mode)) auto-mode-alist))
   (setq interpreter-mode-alist (append '(("ruby" . ruby-mode))
 			       interpreter-mode-alist))
 
-  (autoload 'run-ruby "ruby-mode/inf-ruby"
+  (autoload 'run-ruby "lisp/ruby-mode/inf-ruby"
     "Run an inferior Ruby process")
-  (autoload 'inf-ruby-keys "ruby-mode/inf-ruby"
+  (autoload 'inf-ruby-keys "lisp/ruby-mode/inf-ruby"
     "Set local key defs for inf-ruby in ruby-mode")
   (add-hook 'ruby-mode-hook
         '(lambda ()
@@ -108,7 +108,7 @@
   ;; CEDET ---------------------------------------------------------------------
 
   ;; Load CEDET
-  (load-file "~/.emacs.d/cedet-1.0pre4/common/cedet.elc")
+  (load "lisp/cedet-1.0pre4/common/cedet.elc")
 
   ;; Enabling various SEMANTIC minor modes.  See semantic/INSTALL for more ideas.
   ;; Select one of the following:
@@ -142,7 +142,7 @@
    )
 
   ;; NXHTML-MODE and NXML-MODE -------------------------------------------------
-  (load "~/.emacs.d/nxml/autostart.el")
+  (load "lisp/nxml/autostart.el")
 
   ;; ---------------------------------------------------------------------------
 
@@ -164,9 +164,7 @@
  
  
  (platform-pc?
-  (setq load-path (cons "~/.emacs.d" load-path))
-
-  (require 'cygwin-mount)
+  (require 'lisp/cygwin-mount)
   (cygwin-mount-activate)
 
   ;; use bash as the default shell
