@@ -2,6 +2,9 @@
 ;; probobably this will come in handy for other stuff in the future too
 (server-start)
 
+;; function to load files with error checking
+(autoload 'safe-load "safe-load")
+
 ;; Who needs a toolbar?
 (tool-bar-mode 0)
 
@@ -31,6 +34,11 @@
 ;; Platform specific configurations
 (cond
  (platform-mac?
+
+  (autoload 'markdown-mode "lisp/markdown-mode.el"
+   "Major mode for editing Markdown files" t)
+  (setq auto-mode-alist
+   (cons '("\\.markdown" . markdown-mode) auto-mode-alist))
 
   ;; Set up scheme -------------------------------------------------------------
   (setq scheme-program-name "~/bin/plt/bin/mzscheme")
@@ -76,7 +84,7 @@
   ;; 	      (define-key erlang-shell-mode-map (car spec) (cadr spec)))))
 
   ;; load regex-tool if available
-  (load "lisp/regex-tool.el")
+  (safe-load "lisp/regex-tool.el")
 
   ;; Set up quack --------------------------------------------------------------
   (require 'quack)
