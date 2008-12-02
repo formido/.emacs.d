@@ -27,6 +27,9 @@
 (defun my-prefhand--emacs-lisp-mode ()
   (add-hook 'local-write-file-hooks 'check-parens))
 
+;; Load GitHub's semi-official Emacs-pastie integration mode
+(load "lisp/gist.el")
+
 ;; So we can test for which platform we're on
 (setq platform-mac? (string-match "powerpc" system-configuration))
 (setq platform-pc? (string-match "pc-cygwin" system-configuration))
