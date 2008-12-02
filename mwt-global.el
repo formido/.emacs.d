@@ -198,7 +198,7 @@
  
  
  (platform-pc?
-  (require 'lisp/cygwin-mount)
+  (require 'cygwin-mount)
   (cygwin-mount-activate)
 
   ;; use bash as the default shell
