@@ -31,11 +31,11 @@
 (load "lisp/gist.el")
 
 ;; set up visual theme
-;; (add-to-list 'load-path "~/.emacs.d/lisp/twilight")
 (require 'color-theme)
 (color-theme-initialize)
-(color-theme-snow)
-;;(color-theme-twilight)
+;(color-theme-snow)
+(load "lisp/twilight-emacs/color-theme-twilight.el")
+(color-theme-twilight)
 
 ;; So we can test for which platform we're on
 (setq platform-mac? (string-match "powerpc" system-configuration))
