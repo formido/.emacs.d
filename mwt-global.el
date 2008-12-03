@@ -30,9 +30,18 @@
 ;; Load GitHub's semi-official Emacs-pastie integration mode
 (load "lisp/gist.el")
 
+;; set up visual theme
+(add-to-list 'load-path "~/.emacs.d/lisp/twilight")
+(require 'color-theme)
+(color-theme-initialize)
+;;(color-theme-snow)
+(color-theme-twilight)
+
 ;; So we can test for which platform we're on
 (setq platform-mac? (string-match "powerpc" system-configuration))
-(setq platform-pc? (string-match "pc-cygwin" system-configuration))
+;;TODO: Update this line for home
+(setq platform-homepc? (string-match "XXXXX" system-configuration))
+(setq platform-workpc? (string-match "pc-cygwin" system-configuration))
 
 ;; Platform specific configurations
 (cond
@@ -134,11 +143,6 @@
   (defvar backup-dir (concat "/tmp/emacs_backups/" (user-login-name) "/"))
   (setq backup-directory-alist (list (cons "." backup-dir)))
 
-  ;; set up visual theme
-  (require 'color-theme)
-  (color-theme-initialize)
-  (color-theme-snow)
-
   ;; CEDET ---------------------------------------------------------------------
 
   ;; Load CEDET
@@ -196,13 +200,36 @@
 							    ("%b - Dir:  " default-directory)))))))
   (message "...loaded Mac configuration"))
  
- 
- (platform-pc?
+ (platform-workpc?
+  ;; TODO: Decide whether to remove this. Don't seem to need it.
+  ;; TODO: Emacswiki has a cygwin setup script. Should I use? But it uses cygwin-mount.el
+  ;; which my NTEmacs doesn't seem to need!
+  ;(require 'cygwin-mount)
+  ;(cygwin-mount-activate)
+
+  ;; use bash as the default shell
+  (setq shell-file-name "bash")
+  (setenv "SHELL" shell-file-name)
+  (setenv "PATH" (concat (getenv "PATH") ":/bin" ":/usr/local/bin"))
+  (setq explicit-shell-file-name shell-file-name)
+  (setq explicit-shell-args '("--login" "-i"))
+  (setq shell-command-switch "-ic")
+  (setq w32-quote-process-args t)
+  ;; Not sure I need these
+  ;(defun bash ()
+    ;(interactive)
+    ;(let ((binary-process-input t)
+	  ;(binary-process-output nil))
+      ;(shell)))
+
+  (message "...loaded Work PC configuration"))
+
+ (platform-homepc?
   (require 'cygwin-mount)
   (cygwin-mount-activate)
 
   ;; use bash as the default shell
-  (setq exec-path (cons "C:/Programme/cygwin/bin" exec-path))
+  (setq exec-path (cons "C:\cygwin\bin" exec-path))
   (setq shell-file-name "bash")
   (setenv "SHELL" shell-file-name)
   (setenv "PATH" (concat (getenv "PATH") ";C:\\bin" ";C:\\usr\\local\\bin"))
@@ -216,9 +243,8 @@
 	  (binary-process-output nil))
       (shell)))
 
-  (message "...loaded PC configuration")))
-
-
+  (message "...loaded Home PC configuration")))
+    
 (custom-set-variables
   ;; custom-set-variables was added by Custom.
   ;; If you edit it by hand, you could mess it up, so be careful.
