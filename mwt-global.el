@@ -8,6 +8,10 @@
 ;; Who needs a toolbar?
 (tool-bar-mode 0)
 
+;; Makes it easier to call what used to be M-x
+(global-set-key "\C-x\C-m" 'execute-extended-command)
+(global-set-key "\C-c\C-m" 'execute-extended-command)
+
 ;; Turn on the mouse and visual region highlighting
 (custom-set-variables
 '(mouse-wheel-mode t nil (mwheel))
