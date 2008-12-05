@@ -35,4 +35,8 @@ None.
 TODO 
 ----
 
-None.
+* Handle platform specific code better. Use cases:
+** Code that will always be different depending on operating system. These should get their own file.
+** Code that has to handle whether non-.emacs.d software (non-emacs apps) are installed (yet).
+*** These should be documented along with instructions/pointers to installation processes.
+*** When necessary 3rd party apps aren't installed, I should be notified at startup.
