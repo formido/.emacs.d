@@ -1,0 +1,3 @@
+[submodule "lisp/twilight-emacs"]
+	path = lisp/twilight-emacs
+	url = git://github.com/crafterm/twilight-emacs.git
