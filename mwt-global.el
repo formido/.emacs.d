@@ -5,7 +5,7 @@
     (progn 
       (require 'color-theme)
       (color-theme-initialize)
-      (load "lisp/twilight-emacs/color-theme-twilight.el")
+      (load "theirs/twilight-emacs/color-theme-twilight.el")
       (color-theme-twilight)))
 
 ;; start emacs server so I can hack os x to start files from the Finder
@@ -42,7 +42,7 @@
   (add-hook 'local-write-file-hooks 'check-parens))
 
 ;; Load GitHub's semi-official Emacs-pastie integration mode
-(load "lisp/gist.el")
+(load "theirs/gist.el")
 
 ;; So we can test for which platform we're on
 (setq platform-mac? (string-match "powerpc" system-configuration))
@@ -54,7 +54,7 @@
 (cond
  (platform-mac?
 
-  (autoload 'markdown-mode "lisp/markdown-mode.el"
+  (autoload 'markdown-mode "theirs/markdown-mode.el"
    "Major mode for editing Markdown files" t)
   (setq auto-mode-alist
    (cons '("\\.markdown" . markdown-mode) auto-mode-alist))
@@ -103,22 +103,22 @@
   ;; 	      (define-key erlang-shell-mode-map (car spec) (cadr spec)))))
 
   ;; load regex-tool if available
-  (safe-load "lisp/regex-tool.el")
+  (safe-load "theirs/regex-tool.el")
 
   ;; Set up quack --------------------------------------------------------------
   (require 'quack)
   
   ;; Set up ruby-mode ----------------------------------------------------------
-  (autoload 'ruby-mode "lisp/ruby-mode/ruby-mode"
+  (autoload 'ruby-mode "theirs/ruby-mode/ruby-mode"
     "Mode for editing ruby source files" t)
   (setq auto-mode-alist
 	(append '(("\\.rb$" . ruby-mode)) auto-mode-alist))
   (setq interpreter-mode-alist (append '(("ruby" . ruby-mode))
 			       interpreter-mode-alist))
 
-  (autoload 'run-ruby "lisp/ruby-mode/inf-ruby"
+  (autoload 'run-ruby "theirs/ruby-mode/inf-ruby"
     "Run an inferior Ruby process")
-  (autoload 'inf-ruby-keys "lisp/ruby-mode/inf-ruby"
+  (autoload 'inf-ruby-keys "theirs/ruby-mode/inf-ruby"
     "Set local key defs for inf-ruby in ruby-mode")
   (add-hook 'ruby-mode-hook
         '(lambda ()
@@ -153,7 +153,7 @@
   ;; CEDET ---------------------------------------------------------------------
 
   ;; Load CEDET
-  (load "lisp/cedet-1.0pre4/common/cedet.elc")
+  (load "theirs/cedet-1.0pre4/common/cedet.elc")
 
   ;; Enabling various SEMANTIC minor modes.  See semantic/INSTALL for more ideas.
   ;; Select one of the following:
@@ -187,7 +187,7 @@
    )
 
   ;; NXHTML-MODE and NXML-MODE -------------------------------------------------
-  (load "lisp/nxml/autostart.el")
+  (load "theirs/nxml/autostart.el")
 
   ;; ---------------------------------------------------------------------------
 
