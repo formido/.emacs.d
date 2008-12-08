@@ -1,3 +1,4 @@
+;;test
 ;; If we're in a debug instance of Emacs, load default color-theme
 ;; to differentiate it
 (if (not debug-on-error) 
