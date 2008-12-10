@@ -1,4 +1,3 @@
-;;test
 ;; If we're in a debug instance of Emacs, load default color-theme
 ;; to differentiate it
 (if (not debug-on-error) 
@@ -43,6 +42,7 @@
 
 ;; Load GitHub's semi-official Emacs-pastie integration mode
 (load "theirs/gist.el")
+
 
 ;; So we can test for which platform we're on
 (setq platform-mac? (string-match "powerpc" system-configuration))
@@ -210,6 +210,19 @@
  ((or platform-workpc? platform-homepc?)
   (load "windows.el")
 ))
+
+;; Load Steve Yegge's javascript mode
+;;(autoload 'theirs/js2-mode "js2" nil t)
+(load "theirs/js2.elc")
+(add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
+
+;; Load MozlRepl
+(autoload 'moz-minor-mode "moz" "Mozilla Minor and Inferior Mozilla Modes" t)
+
+(add-hook 'js2-mode-hook 'java-custom-setup)
+(defun java-custom-setup ()
+  (moz-minor-mode 1))
+
     
 (custom-set-variables
   ;; custom-set-variables was added by Custom.
