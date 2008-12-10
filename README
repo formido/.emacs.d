@@ -41,5 +41,8 @@ TODO
 *** These should be documented along with instructions/pointers to installation processes.
 *** When necessary 3rd party apps aren't installed, I should be notified at startup.
 * Document process for setting up new system from soup to nuts.
+** Should have a minimal path for when I just need to get stuff done on someone else's computer for a few hours.
 ** This includes, e.g., setting up GitHub config.
 * File to quiz keyboard command katas.
+* Need to enable SSH into home pc.
+* Need to setup sync scripts on all my computers.
