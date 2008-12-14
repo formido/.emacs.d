@@ -46,6 +46,7 @@
 ;; Load wikipedia mode
 (autoload 'wikipedia-mode "wikipedia-mode.el"
 "Major mode for editing documents in Wikipedia markup." t)
+(add-to-list 'auto-mode-alist '("*terry\\.com*" . wikipedia-mode))
 
 ;; So we can test for which platform we're on
 (setq platform-mac? (string-match "powerpc" system-configuration))
