@@ -43,16 +43,12 @@
 ;; Load GitHub's semi-official Emacs-pastie integration mode
 (load "theirs/gist.el")
 
-;; Load wikipedia mode
-(autoload 'wikipedia-mode "wikipedia-mode.el"
-"Major mode for editing documents in Wikipedia markup." t)
-(add-to-list 'auto-mode-alist '("*terry\\.com*" . wikipedia-mode))
 
 ;; So we can test for which platform we're on
 (setq platform-mac? (string-match "powerpc" system-configuration))
 ;;TODO: Update this line for home
 (setq platform-ntemacs? (string-match "mingw" system-configuration))
-(setq platform-cygwinemacs? (string-match "pc-cygwin" system-configuration))
+(setq platform-cygemacs? (string-match "pc-cygwin" system-configuration))
 
 ;; Platform specific configurations
 (cond
@@ -211,7 +207,7 @@
 							    ("%b - Dir:  " default-directory)))))))
   (message "...loaded Mac configuration"))
  
- ((or platform-cygwinemacs? platform-ntemacs?)
+ ((or platform-cygemacs? platform-ntemacs?)
   (load "windows.el")
 ))
 
