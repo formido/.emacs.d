@@ -1,5 +1,5 @@
 (cond
- (platform-workpc?
+ (platform-cygwinemacs?
   ;; TODO: Decide whether to remove this. Don't seem to need it.
   ;; TODO: Emacswiki has a cygwin setup script. Should I use? But it uses cygwin-mount.el
   ;; which my NTEmacs doesn't seem to need!
@@ -21,8 +21,8 @@
 	  ;(binary-process-output nil))
       ;(shell)))
 
-  (message "...loaded Work PC configuration"))
- (platform-homepc?
+  (message "...loaded Cygwin PC configuration"))
+ (platform-ntemacs?
   (require 'cygwin-mount)
   (cygwin-mount-activate)
 
@@ -40,4 +40,4 @@
     (let ((binary-process-input t)
 	  (binary-process-output nil))
       (shell)))
-  (message "...loaded Home PC configuration")))
+  (message "...loaded NTEmacs PC configuration")))
