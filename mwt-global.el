@@ -43,6 +43,9 @@
 ;; Load GitHub's semi-official Emacs-pastie integration mode
 (load "theirs/gist.el")
 
+;; Load wikipedia mode
+(autoload 'wikipedia-mode "wikipedia-mode.el"
+"Major mode for editing documents in Wikipedia markup." t)
 
 ;; So we can test for which platform we're on
 (setq platform-mac? (string-match "powerpc" system-configuration))
