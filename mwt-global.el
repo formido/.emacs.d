@@ -44,6 +44,11 @@
 (load "theirs/gist.el")
 
 
+;; Load textile mode. Needs improvement, though.
+(require 'textile-mode)
+(add-to-list 'auto-mode-alist '("\\.textile\\'" . textile-mode))
+(add-to-list 'auto-mode-alist '("*github\\.com*" . textile-mode))
+
 ;; So we can test for which platform we're on
 (setq platform-mac? (string-match "powerpc" system-configuration))
 ;;TODO: Update this line for home
