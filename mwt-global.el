@@ -49,6 +49,9 @@
 (add-to-list 'auto-mode-alist '("\\.textile\\'" . textile-mode))
 (add-to-list 'auto-mode-alist '("*github\\.com*" . textile-mode))
 
+;; NXHTML-MODE and NXML-MODE -------------------------------------------------
+(load "theirs/nxml/autostart.el")
+
 ;; So we can test for which platform we're on
 (setq platform-mac? (string-match "powerpc" system-configuration))
 ;;TODO: Update this line for home
@@ -190,9 +193,6 @@
    ;; Your init file should contain only one such instance.
    ;; If there is more than one, they won't work right.
    )
-
-  ;; NXHTML-MODE and NXML-MODE -------------------------------------------------
-  (load "theirs/nxml/autostart.el")
 
   ;; ---------------------------------------------------------------------------
 
