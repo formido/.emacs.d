@@ -51,8 +51,8 @@
 ;; So we can test for which platform we're on
 (setq platform-mac? (string-match "powerpc" system-configuration))
 ;;TODO: Update this line for home
-(setq platform-homepc? (string-match "mingw" system-configuration))
-(setq platform-workpc? (string-match "pc-cygwin" system-configuration))
+(setq platform-ntemacs? (string-match "mingw" system-configuration))
+(setq platform-cygemacs? (string-match "pc-cygwin" system-configuration))
 
 ;; Platform specific configurations
 (cond
@@ -211,7 +211,7 @@
 							    ("%b - Dir:  " default-directory)))))))
   (message "...loaded Mac configuration"))
  
- ((or platform-workpc? platform-homepc?)
+ ((or platform-cygemacs? platform-ntemacs?)
   (load "windows.el")
 ))
 
