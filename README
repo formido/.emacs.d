@@ -30,7 +30,7 @@ Future times:
 ISSUES 
 ------
 
-None.
+Some built-in modes, e.g., python-mode, don't work under ntemacs.
 
 TODO 
 ----
