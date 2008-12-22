@@ -58,6 +58,9 @@
 (setq platform-ntemacs? (string-match "mingw" system-configuration))
 (setq platform-cygemacs? (string-match "pc-cygwin" system-configuration))
 
+;; Load lorem ipsum generator
+(load "theirs/lorem-ipsum.el")
+
 ;; Platform specific configurations
 (cond
  (platform-mac?
