@@ -549,10 +549,10 @@ Report bugs to: Uwe Brauer oub at mat.ucm.es")
   :group 'font-wikipedia-highlighting-faces)
 
 (defface font-wikipedia-sedate-face
-  '((((class grayscale) (background light)) (:foreground "DimGray"))
-    (((class grayscale) (background dark))  (:foreground "LightGray"))
-    (((class color) (background light)) (:foreground "DimGray"))
-    (((class color) (background dark))  (:foreground "LightGray"))
+  '((((class grayscale) (background light)) (:foreground "green"))
+    (((class grayscale) (background dark))  (:foreground "green"))
+    (((class color) (background light)) (:foreground "green"))
+    (((class color) (background dark))  (:foreground "green"))
 ;;;(t (:underline t))
     )
   "Face used to highlight sedate stuff."

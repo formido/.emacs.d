@@ -49,6 +49,10 @@
 (add-to-list 'auto-mode-alist '("\\.textile\\'" . textile-mode))
 (add-to-list 'auto-mode-alist '("*github\\.com*" . textile-mode))
 
+;; Load wikipedia mode.
+;; (require 'wikipedia-mode)
+;; (add-to-list 'auto-mode-alist '("\\terry\\.com" . wikipedia-mode))
+
 ;; NXHTML-MODE and NXML-MODE -------------------------------------------------
 (load "theirs/nxml/autostart.el")
 
