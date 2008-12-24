@@ -21,6 +21,11 @@
 (global-set-key "\C-x\C-m" 'execute-extended-command)
 (global-set-key "\C-c\C-m" 'execute-extended-command)
 
+;; Enable backward kill word for faster typing
+(global-set-key "\C-w" 'backward-kill-word)
+(global-set-key "\C-x\C-k" 'kill-region)
+(global-set-key "\C-c\C-k" 'kill-region)
+
 ;; Turn on the mouse and visual region highlighting
 (custom-set-variables
 '(mouse-wheel-mode t nil (mwheel))
@@ -40,9 +45,12 @@
 (defun my-prefhand--emacs-lisp-mode ()
   (add-hook 'local-write-file-hooks 'check-parens))
 
+;; Set up jabber support
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/theirs/emacs-jabber"))
+(require 'jabber)
+
 ;; Load GitHub's semi-official Emacs-pastie integration mode
 (load "theirs/gist.el")
-
 
 ;; Load textile mode. Needs improvement, though.
 (require 'textile-mode)
