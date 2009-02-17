@@ -7,6 +7,12 @@
       (load "theirs/twilight-emacs/color-theme-twilight.el")
       (color-theme-twilight)))
 
+;; Turn off backups.
+(setq make-backup-files nil) 
+
+;; Turn off autosaves.
+(setq auto-save-mode nil)
+
 ;; start emacs server so I can hack os x to start files from the Finder
 ;; probobably this will come in handy for other stuff in the future too
 (server-start)
@@ -176,11 +182,6 @@
   ;; Save all backup file in this directory.
   ;; (setq backup-directory-alist (quote ((".*" . (expand-file-name "~/.emacs_backups/")))))
 
-  ;; Turn of backups.
-  (setq make-backup-files nil) 
-
-  ;; Turn off autosaves.
-  (setq auto-save-mode nil)
 
   ;; CEDET ---------------------------------------------------------------------
 
