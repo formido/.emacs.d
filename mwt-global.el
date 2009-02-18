@@ -9,9 +9,11 @@
 
 ;; Turn off backups.
 (setq make-backup-files nil) 
+(setq backup-inhibited t)
 
 ;; Turn off autosaves.
 (setq auto-save-mode nil)
+(setq auto-save-default nil)
 
 ;; start emacs server so I can hack os x to start files from the Finder
 ;; probobably this will come in handy for other stuff in the future too
