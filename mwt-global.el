@@ -1,11 +1,11 @@
 ;; If we're in a debug instance of Emacs, load default color-theme
 ;; to differentiate it
-(if (not debug-on-error) 
-    (progn 
-      (require 'color-theme)
-      (color-theme-initialize)
-      (load "theirs/twilight-emacs/color-theme-twilight.el")
-      (color-theme-twilight)))
+;; (if (not debug-on-error) 
+;;    (progn 
+;;      (require 'color-theme)
+;;      (color-theme-initialize)
+;;      (load "theirs/twilight-emacs/color-theme-twilight.el")
+;;      (color-theme-twilight)))
 
 ;; Turn off backups.
 (setq make-backup-files nil) 

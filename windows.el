@@ -40,4 +40,12 @@
     (let ((binary-process-input t)
 	  (binary-process-output nil))
       (shell)))
+
+  ;; TODO: Make this load conditionally
+  (setq load-path (cons  "C:/Program Files/erl5.7/lib/tools-2.6.3/emacs"
+			 load-path))
+  (setq erlang-root-dir "C:/Program Files/erl5.7")
+  (setq exec-path (cons "C:/Program Files/erl5.7/bin" exec-path))
+  (require 'erlang-start)
+
   (message "...loaded NTEmacs configuration")))
