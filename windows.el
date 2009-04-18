@@ -41,46 +41,50 @@
 	  (binary-process-output nil))
       (shell)))
 
-  ;; TODO: Make this load conditionally
   ;; Set up erlang-mode
-  (setq load-path (cons  "C:/Program Files/erl5.7/lib/tools-2.6.3/emacs"
-			 load-path))
-  (setq erlang-root-dir "C:/Program Files/erl5.7")
-  (setq exec-path (cons "C:/Program Files/erl5.7/bin" exec-path))
-  (require 'erlang-start)
+  (setq erlang-start "C:/ProgramFiles/erl5.7/lib/tools-2.6.3/emacs/erlang-start.el")
+  (if (file-exists-p erlang-start)
+      (progn
+	(setq load-path (cons  "C:/ProgramFiles/erl5.7/lib/tools-2.6.3/emacs"
+			       load-path))
+	(setq erlang-root-dir "C:/ProgramFiles/erl5.7")
+	(setq exec-path (cons "C:/ProgramFiles/erl5.7/bin" exec-path))
+	(require 'erlang-start))
+    (message (concat "Warning: Couldn't find: " erlang-start)))
 
-  ;; TODO: Make this load conditionally
   ;; Set up distel for erlang
-  (add-to-list 'load-path "c:/Documents and Settings/Michael/My Documents/.emacs.d/theirs/distel/elisp")
-  (require 'distel)
-  (distel-setup)
-  
-  ;; ------------------------------------------------------
-  ;; TODO: Make these load conditionally
-  ;; Customizations from Bill Clementson: http://bc.tech.coop/blog/070528.html
-  ;; Some Erlang customizations
-  (add-hook 'erlang-mode-hook
-	    (lambda ()
-	      ;; when starting an Erlang shell in Emacs, default in the node name
-	      (setq inferior-erlang-machine-options '("-sname" "emacs"))
-	      ;; add Erlang functions to an imenu menu
-	      (imenu-add-to-menubar "imenu")))
+  (setq distel "c:/Documents and Settings/Michael/My Documents/.emacs.d/theirs/distel/elisp")
+  (if (file-exists-p distel)
+      (progn
+	(add-to-list 'load-path distel)
+	(require 'distel)
+	(distel-setup)
 
-  ;; A number of the erlang-extended-mode key bindings are useful in the shell too
-  (defconst distel-shell-keys
-    '(("\C-\M-i"   erl-complete)
-      ("\M-?"      erl-complete)	
-      ("\M-."      erl-find-source-under-point)
-      ("\M-,"      erl-find-source-unwind) 
-      ("\M-*"      erl-find-source-unwind) 
-      )
-    "Additional keys to bind when in Erlang shell.")
+	;; Customizations from Bill Clementson: http://bc.tech.coop/blog/070528.html
+	;; Some Erlang customizations
+	(add-hook 'erlang-mode-hook
+		  (lambda ()
+		    ;; when starting an Erlang shell in Emacs, default in the node name
+		    (setq inferior-erlang-machine-options '("-sname" "emacs"))
+		    ;; add Erlang functions to an imenu menu
+		    (imenu-add-to-menubar "imenu")))
 
-  (add-hook 'erlang-shell-mode-hook
-	    (lambda ()
-	      ;; add some Distel bindings to the Erlang shell
-	      (dolist (spec distel-shell-keys)
-		(define-key erlang-shell-mode-map (car spec) (cadr spec)))))
-  ;; ------------------------------------------------------
+	;; A number of the erlang-extended-mode key bindings are useful in the shell too
+	(defconst distel-shell-keys
+	  '(("\C-\M-i"   erl-complete)
+	    ("\M-?"      erl-complete)	
+	    ("\M-."      erl-find-source-under-point)
+	    ("\M-,"      erl-find-source-unwind) 
+	    ("\M-*"      erl-find-source-unwind) 
+	    )
+	  "Additional keys to bind when in Erlang shell.")
+
+	(add-hook 'erlang-shell-mode-hook
+		  (lambda ()
+		    ;; add some Distel bindings to the Erlang shell
+		    (dolist (spec distel-shell-keys)
+		      (define-key erlang-shell-mode-map (car spec) (cadr spec))))))
+	
+	(message (concat "Warning: Couldn't find: " distel)))
 
   (message "...loaded NTEmacs configuration")))
