@@ -7,6 +7,13 @@
       (load "theirs/twilight-emacs/color-theme-twilight.el")
       (color-theme-twilight)))
 
+;; Set up Haskell
+(load "~/.emacs.d/theirs/haskell-mode-2.4/haskell-site-file")
+(add-hook 'haskell-mode-hook 'turn-on-haskell-doc-mode)
+(add-hook 'haskell-mode-hook 'turn-on-haskell-indent)
+(add-hook 'haskell-mode-hook 'font-lock-mode)
+(add-hook 'haskell-mode-hook 'imenu-add-menubar-index)
+
 ;; anything setup   
 (setq anything "c:/Documents and Settings/Michael/My Documents/.emacs.d/theirs/anything")
 (add-to-list 'load-path anything)
