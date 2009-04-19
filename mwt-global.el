@@ -7,6 +7,18 @@
       (load "theirs/twilight-emacs/color-theme-twilight.el")
       (color-theme-twilight)))
 
+;; anything setup   
+(setq anything "c:/Documents and Settings/Michael/My Documents/.emacs.d/theirs/anything")
+(add-to-list 'load-path anything)
+(require 'anything-config)   
+(global-set-key [\C-2 \C-2] 'anything)  
+(global-set-key [\C-c \C-2] 'universal-argument)   
+(setq anything-sources '(anything-c-source-buffers+   
+			 anything-c-source-locate   
+			 anything-c-source-recentf   
+			 anything-c-source-org-headline   
+			 anything-c-source-buffer-not-found)) 
+
 ;; Turn off backups.
 (setq make-backup-files nil) 
 (setq backup-inhibited t)
@@ -25,7 +37,7 @@
 ;; Who needs a toolbar?
 (tool-bar-mode 0)
 
-;; Makes it easier to call what used to be M-x
+;; Makes it easier to call what used to be M-x
 (global-set-key "\C-x\C-m" 'execute-extended-command)
 (global-set-key "\C-c\C-m" 'execute-extended-command)
 

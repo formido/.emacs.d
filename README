@@ -41,6 +41,9 @@ Some built-in modes, e.g., python-mode, don't work under ntemacs.
 TODO 
 ----
 
+* Figure out how to add a number as global-set-key argument so I can activate anything the way
+  I want.
+* Abstract out personal file paths.
 * Handle platform specific code better. Use cases:
 ** Code that will always be different depending on operating system. These should get their own file.
 ** Code that has to handle whether non-.emacs.d software (non-emacs apps) are installed (yet).
