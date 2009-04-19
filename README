@@ -19,13 +19,19 @@ INSTALLATION
 
 First time:
 
-1. Copy .emacs to ~/.emacs. This file will always point to the "real" .emacs inside the .emacs.d directory.  
-2. Mirror repo to ~/.emacs.d.
+1. Mirror repo to ~/.emacs.d.
+2. Copy .emacs inside repo to ~/.emacs. This file will always point to the "real" .emacs inside the .emacs.d directory.  
+
+These next two are required to pull down the twilight theme submodule:
+
+3. cd into repo.
+4. Run 'git submodule init'.
+5. Run 'git submodule update'.
 
 Future times:
 
 1. Pull repo in ~/.emacs.d from GitHub master.
-
+2. Run 'git submodule update' as needed.
 
 ISSUES 
 ------
