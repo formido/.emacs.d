@@ -7,6 +7,13 @@
       (load "theirs/twilight-emacs/color-theme-twilight.el")
       (color-theme-twilight)))
 
+;; Set up ocaml
+(add-to-list 'load-path "c:/Documents and Settings/Michael/My Documents/.emacs.d/theirs/ocaml-mode-3.05")
+(setq auto-mode-alist
+      (cons '("\\.ml[iylp]?$" . caml-mode) auto-mode-alist))
+(require 'caml)
+(require 'inf-caml)
+
 ;; Set up Haskell
 (load "~/.emacs.d/theirs/haskell-mode-2.4/haskell-site-file")
 (add-hook 'haskell-mode-hook 'turn-on-haskell-doc-mode)
