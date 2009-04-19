@@ -14,12 +14,12 @@
 (add-hook 'haskell-mode-hook 'font-lock-mode)
 (add-hook 'haskell-mode-hook 'imenu-add-menubar-index)
 
-;; anything setup   
+;; Set up Anything
 (setq anything "c:/Documents and Settings/Michael/My Documents/.emacs.d/theirs/anything")
 (add-to-list 'load-path anything)
 (require 'anything-config)   
-(global-set-key [\C-2 \C-2] 'anything)  
-(global-set-key [\C-c \C-2] 'universal-argument)   
+(global-set-key (kbd "C-2") 'anything)  
+(global-set-key (kbd "M-2") 'universal-argument)   
 (setq anything-sources '(anything-c-source-buffers+   
 			 anything-c-source-locate   
 			 anything-c-source-recentf   
