@@ -42,18 +42,19 @@
       (shell)))
 
   ;; Set up erlang-mode
-  (setq erlang-start "C:/ProgramFiles/erl5.7/lib/tools-2.6.3/emacs/erlang-start.el")
+  (setq erlang-start "C:/ProgramFiles/erl5.7.1/lib/tools-2.6.4/emacs/erlang-start.el")
   (if (file-exists-p erlang-start)
       (progn
-	(setq load-path (cons  "C:/ProgramFiles/erl5.7/lib/tools-2.6.3/emacs"
+	(setq load-path (cons  "C:/ProgramFiles/erl5.7.1/lib/tools-2.6.4/emacs"
 			       load-path))
-	(setq erlang-root-dir "C:/ProgramFiles/erl5.7")
-	(setq exec-path (cons "C:/ProgramFiles/erl5.7/bin" exec-path))
-	(require 'erlang-start))
+	(setq erlang-root-dir "C:/ProgramFiles/erl5.7.1")
+	(setq exec-path (cons "C:/ProgramFiles/erl5.7.1/bin" exec-path))
+	(require 'erlang-start)
+	(message "Erlang install was found."))
     (message (concat "Warning: Couldn't find: " erlang-start)))
 
   ;; Set up distel for erlang
-  (setq distel "c:/Documents and Settings/Michael/My Documents/.emacs.d/theirs/distel/elisp")
+  (setq distel (expand-file-name "~/.emacs.d/theirs/distel/elisp"))
   (if (file-exists-p distel)
       (progn
 	(add-to-list 'load-path distel)
