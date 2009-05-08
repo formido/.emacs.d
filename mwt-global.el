@@ -8,7 +8,7 @@
       (color-theme-twilight)))
 
 ;; Set up ocaml
-(add-to-list 'load-path "c:/Documents and Settings/Michael/My Documents/.emacs.d/theirs/ocaml-mode-3.05")
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/theirs/ocaml-mode-3.05"))
 (setq auto-mode-alist
       (cons '("\\.ml[iylp]?$" . caml-mode) auto-mode-alist))
 (require 'caml)
@@ -22,7 +22,7 @@
 (add-hook 'haskell-mode-hook 'imenu-add-menubar-index)
 
 ;; Set up Anything
-(setq anything "c:/Documents and Settings/Michael/My Documents/.emacs.d/theirs/anything")
+(setq anything (expand-file-name "~/.emacs.d/theirs/anything"))
 (add-to-list 'load-path anything)
 (require 'anything-config)   
 (global-set-key (kbd "C-2") 'anything)  
