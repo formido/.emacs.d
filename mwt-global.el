@@ -7,6 +7,9 @@
       (load "theirs/twilight-emacs/color-theme-twilight.el")
       (color-theme-twilight)))
 
+;; cycle through buffers with Ctrl-Tab (like Firefox)
+(global-set-key (kbd "<C-tab>") 'bury-buffer)
+
 ;; Set up ocaml
 (add-to-list 'load-path (expand-file-name "~/.emacs.d/theirs/ocaml-mode-3.05"))
 (setq auto-mode-alist
@@ -49,9 +52,10 @@
 (autoload 'safe-load "safe-load")
 
 ;; Who needs a toolbar?
-(tool-bar-mode 0)
+(if (boundp 'tool-bar-mode)
+    (tool-bar-mode 0))
 
-;; Makes it easier to call what used to be M-x
+;; Makes it easier to call what used to be M-
 (global-set-key "\C-x\C-m" 'execute-extended-command)
 (global-set-key "\C-c\C-m" 'execute-extended-command)
 
@@ -103,12 +107,40 @@
 ;;TODO: Update this line for home
 (setq platform-ntemacs? (string-match "mingw" system-configuration))
 (setq platform-cygemacs? (string-match "pc-cygwin" system-configuration))
+(setq platform-linux? (string-match "linux" system-configuration))
 
 ;; Load lorem ipsum generator
 (load "theirs/lorem-ipsum.el")
 
 ;; Platform specific configurations
 (cond
+ (platform-linux?
+  
+  ;; Set up er -------------------------------------------------------------
+  (setq erlang-root-dir "/usr/local/lib/erlang")
+  (setq load-path (cons "/usr/local/lib/erlang/lib/tools-2.6.4" load-path))
+  (setq exec-path (cons "/usr/local/lib/erlang/bin" exec-path))
+  (require 'erlang-start)
+
+  ;;Keeps emacs from hanging for 60s when using io commands
+  ;;http://bob.pythonmac.org/archives/2007/03/14/erlang-mode-for-emacs/
+  (defvar inferior-erlang-prompt-timeout t)
+
+  ;; set up distel
+  (require 'distel)
+  (distel-setup)
+
+  ;; Some Erlang customizations
+  (add-hook 'erlang-mode-hook
+	    (lambda ()
+	      ;; when starting an Erlang shell in Emacs, default in the node name
+	      (setq inferior-erlang-machine-options '("-sname" "emacs"))
+	      ;; add Erlang functions to an imenu menu
+	      (imenu-add-to-menubar "imenu")))
+
+  (message "Loaded Linux configuration..."))
+
+  
  (platform-mac?
 
   (autoload 'markdown-mode "theirs/markdown-mode.el"
@@ -119,7 +151,7 @@
   ;; Set up scheme -------------------------------------------------------------
   (setq scheme-program-name "~/bin/plt/bin/mzscheme")
 
-  ;; Set up erlang -------------------------------------------------------------
+  ;; Set up er -------------------------------------------------------------
   (setq erlang-root-dir "/opt/local/lib/erlang")
   (setq load-path (cons "/opt/local/lib/erlang/lib/tools-2.5.5/emacs" load-path))
   (setq exec-path (cons "/opt/local/lib/erlang/bin" exec-path))
@@ -266,8 +298,7 @@
   (message "...loaded Mac configuration"))
  
  ((or platform-cygemacs? platform-ntemacs?)
-  (load "windows.el")
-))
+  (load "windows.el")))
 
 ;; Load Steve Yegge's javascript mode
 ;;(autoload 'theirs/js2-mode "js2" nil t)
