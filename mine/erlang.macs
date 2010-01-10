@@ -1,0 +1,3 @@
+(fset 'macro-erlang-compile-load
+   "\C-xb*shell*\C-m\C-[>make:all([load]).\C-m\C-xb\C-m")
+(global-set-key "\C-c\C-ec" 'macro-erlang-compile-load)

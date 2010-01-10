@@ -122,6 +122,8 @@
  (platform-linux?
   
   ;; Set up erlang -------------------------------------------------------------
+  (load-file "~/.emacs.d/mine/erlang.macs")
+
   (setq erlang-root-dir "/usr/local/lib/erlang")
   (setq load-path (cons "/usr/local/lib/erlang/lib/tools-2.6.4" load-path))
   (setq exec-path (cons "/usr/local/lib/erlang/bin" exec-path))
