@@ -5,7 +5,8 @@
       (require 'color-theme)
       (color-theme-initialize)
       (load "theirs/twilight-emacs/color-theme-twilight.el")
-      (color-theme-twilight)))
+      ;;(color-theme-twilight)
+      ))
 
 ;; cycle through buffers with Ctrl-Tab (like Firefox)
 (global-set-key (kbd "<C-tab>") 'bury-buffer)
@@ -16,6 +17,10 @@
       (cons '("\\.ml[iylp]?$" . caml-mode) auto-mode-alist))
 (require 'caml)
 (require 'inf-caml)
+
+;; set up modes for cappuccino/objective-j development
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/theirs/cappuccino"))
+(require 'objj-mode)
 
 ;; Set up Haskell
 (load "~/.emacs.d/theirs/haskell-mode-2.4/haskell-site-file")
@@ -116,7 +121,7 @@
 (cond
  (platform-linux?
   
-  ;; Set up er -------------------------------------------------------------
+  ;; Set up erlang -------------------------------------------------------------
   (setq erlang-root-dir "/usr/local/lib/erlang")
   (setq load-path (cons "/usr/local/lib/erlang/lib/tools-2.6.4" load-path))
   (setq exec-path (cons "/usr/local/lib/erlang/bin" exec-path))
