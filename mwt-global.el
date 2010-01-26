@@ -8,6 +8,10 @@
       ;;(color-theme-twilight)
       ))
 
+;; set up magit
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/theirs/magit"))
+(require 'magit)
+
 ;; cycle through buffers with Ctrl-Tab (like Firefox)
 (global-set-key (kbd "<C-tab>") 'bury-buffer)
 
@@ -134,14 +138,23 @@
   (defvar inferior-erlang-prompt-timeout t)
 
   ;; set up distel
+  (add-to-list 'load-path (expand-file-name "~/.emacs.d/theirs/distel/elisp"))
   (require 'distel)
   (distel-setup)
 
   ;; Some Erlang customizations
+  ;; TODO: this project configuration stuff should go elsewhere
   (add-hook 'erlang-mode-hook
 	    (lambda ()
-	      ;; when starting an Erlang shell in Emacs, default in the node name
-	      (setq inferior-erlang-machine-options '("-sname" "emacs"))
+	      (setq inferior-erlang-machine-options '("-sname" "emacs"
+						      "-setcookie" "magiccookie"
+						      "-pa" "/var/www/html/flashcard2/ebin"
+						      "-pa" "/var/www/html/flashcard2/deps/erlmongo"
+						      "-pa" "/var/www/html/flashcard2/deps/*/ebin"
+						      "-pa" "/var/www/html/flashcard2/deps/*/deps/*/ebin"
+						      "-rest_api" "db_name" "'<<\"tests\">>'" 
+						      "-boot" "start_sasl"
+						      "-s" "rest_api"))
 	      ;; add Erlang functions to an imenu menu
 	      (imenu-add-to-menubar "imenu")))
 
