@@ -109,7 +109,7 @@
 ;; (add-to-list 'auto-mode-alist '("\\terry\\.com" . wikipedia-mode))
 
 ;; NXHTML-MODE and NXML-MODE -------------------------------------------------
-(load "theirs/nxml/autostart.el")
+;; (load "theirs/nxml/autostart.el")
 
 ;; So we can test for which platform we're on
 (setq platform-mac? (string-match "powerpc" system-configuration))
