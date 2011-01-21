@@ -33,8 +33,6 @@
 (add-hook 'haskell-mode-hook 'font-lock-mode)
 (add-hook 'haskell-mode-hook 'imenu-add-menubar-index)
 
-(message "1")
-
 ;; Set up Anything
 ;;(setq anything (expand-file-name "~/.emacs.d/theirs/anything"))
 ;;(add-to-list 'load-path anything)
@@ -47,19 +45,13 @@
 ;;			 anything-c-source-org-headline   
 ;;			 anything-c-source-buffer-not-found))
 
-(message "2")
-
 ;; Turn off backups.
 (setq make-backup-files nil) 
 (setq backup-inhibited t)
 
-(message "3")
-
 ;; Turn off autosaves.
 (setq auto-save-mode nil)
 (setq auto-save-default nil)
-
-(message "4")
 
 ;; start emacs server so I can hack os x to start files from the Finder
 ;; probobably this will come in handy for other stuff in the future too
@@ -68,26 +60,19 @@
 ;; function to load files with error checking
 (autoload 'safe-load "safe-load")
 
-(message "5")
-
 ;; Who needs a toolbar?
 (if (boundp 'tool-bar-mode)
     (tool-bar-mode 0))
 
-(message "6")
 
 ;; Makes it easier to call what used to be M-
 (global-set-key "\C-x\C-m" 'execute-extended-command)
 (global-set-key "\C-c\C-m" 'execute-extended-command)
 
-(message "7")
-
 ;; Enable backward kill word for faster typing
 (global-set-key "\C-w" 'backward-kill-word)
 (global-set-key "\C-x\C-k" 'kill-region)
 (global-set-key "\C-c\C-k" 'kill-region)
-
-(message "8")
 
 ;; Turn on the mouse and visual region highlighting
 (custom-set-variables
@@ -108,8 +93,6 @@
 (defun my-prefhand--emacs-lisp-mode ()
   (add-hook 'local-write-file-hooks 'check-parens))
 
-(message "9")
-
 ;; Set up jabber support
 ;;(add-to-list 'load-path (expand-file-name "~/.emacs.d/theirs/emacs-jabber"))
 ;;(require 'jabber)
@@ -117,14 +100,10 @@
 ;; Load GitHub's semi-official Emacs-pastie integration mode
 (load "theirs/gist.el")
 
-(message "10")
-
 ;; Load textile mode. Needs improvement, though.
 (require 'textile-mode)
 (add-to-list 'auto-mode-alist '("\\.textile\\'" . textile-mode))
 (add-to-list 'auto-mode-alist '("*github\\.com*" . textile-mode))
-
-(message "11")
 
 ;; Load wikipedia mode.
 ;; (require 'wikipedia-mode)
@@ -132,8 +111,6 @@
 
 ;; NXHTML-MODE and NXML-MODE -------------------------------------------------
 ;; (load "theirs/nxml/autostart.el")
-
-(message "12")
 
 ;; So we can test for which platform we're on
 (setq platform-mac? (string-match "powerpc" system-configuration))
