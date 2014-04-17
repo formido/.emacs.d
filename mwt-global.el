@@ -15,6 +15,12 @@
 ;; cycle through buffers with Ctrl-Tab (like Firefox)
 (global-set-key (kbd "<C-tab>") 'bury-buffer)
 
+;; make it easier to switch between windows
+(global-set-key (kbd "ESC <left>") 'windmove-left)
+(global-set-key (kbd "ESC <up>") 'windmove-up)
+(global-set-key (kbd "ESC <right>") 'windmove-right)
+(global-set-key (kbd "ESC <down>") 'windmove-down)
+
 ;; Set up ocaml
 (add-to-list 'load-path (expand-file-name "~/.emacs.d/theirs/ocaml-mode-3.05"))
 (setq auto-mode-alist
@@ -322,10 +328,10 @@
   (load "windows.el")))
 
 ;; Load Steve Yegge's javascript mode
-;;(autoload 'theirs/js2-mode "js2" nil t)
-;;(load "theirs/js2.elc")
-;;(add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
-;;(add-to-list 'auto-mode-alist '("\\.jsm$" . js2-mode))
+(autoload 'theirs/js2-mode "js2" nil t)
+(load "theirs/js2.elc")
+(add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
+(add-to-list 'auto-mode-alist '("\\.jsm$" . js2-mode))
 
 ;; Load MozlRepl
 ;;(autoload 'moz-minor-mode "moz" "Mozilla Minor and Inferior Mozilla Modes" t)
