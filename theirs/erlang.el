@@ -1,33 +1,28 @@
 ;; erlang.el --- Major modes for editing and running Erlang
-
-;; Copyright (C) 1995-1998,2000  Ericsson Telecom AB
-;; Copyright (C) 2004  Free Software Foundation, Inc.
-;; Author:   Anders Lindgren
-;; Version:  2.5.4
-;; Keywords: erlang, languages, processes
-;; Date:     2000-09-11
-
+;; %CopyrightBegin%
+;; 
+;; Copyright Ericsson AB 1996-2009. All Rights Reserved.
+;; 
 ;; The contents of this file are subject to the Erlang Public License,
 ;; Version 1.1, (the "License"); you may not use this file except in
 ;; compliance with the License. You should have received a copy of the
 ;; Erlang Public License along with this software. If not, it can be
-;; retrieved via the world wide web at http://www.erlang.org/.
-
+;; retrieved online at http://www.erlang.org/.
+;; 
 ;; Software distributed under the License is distributed on an "AS IS"
 ;; basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
 ;; the License for the specific language governing rights and limitations
 ;; under the License.
-
-;; The Initial Developer of the Original Code is Ericsson Utvecklings AB.
-;; All Rights Reserved.
+;; 
+;; %CopyrightEnd%
+;; 
+;; Copyright (C) 2004  Free Software Foundation, Inc.
+;; Author:   Anders Lindgren
+;; Keywords: erlang, languages, processes
 
 ;; Lars Thorsén's modifications of 2000-06-07 included.
- 
 ;; The original version of this package was written by Robert Virding.
 ;;
-;; Most skeletons have been written at Ericsson Telecom by
-;; magnus@erix.ericsson.se and janne@erix.ericsson.se
-
 ;;; Commentary:
 
 ;; Introduction:
@@ -77,7 +72,7 @@
 
 ;; Variables:
 
-(defconst erlang-version "2.5.4"
+(defconst erlang-version "2.6.1"
   "The version number of Erlang mode.")
 
 (defvar erlang-root-dir nil
@@ -86,6 +81,36 @@ The name should not contain the trailing slash.
 
 Should this variable be nil, no manual pages will show up in the
 Erlang mode menu.")
+
+(eval-and-compile
+  (defconst erlang-emacs-major-version
+    (if (boundp 'emacs-major-version)
+	emacs-major-version
+      (string-match "\\([0-9]+\\)\\.\\([0-9]+\\)" emacs-version)
+      (erlang-string-to-int (substring emacs-version
+				       (match-beginning 1) (match-end 1))))
+    "Major version number of Emacs."))
+
+(eval-and-compile
+  (defconst erlang-emacs-minor-version
+  (if (boundp 'emacs-minor-version)
+      emacs-minor-version
+    (string-match "\\([0-9]+\\)\\.\\([0-9]+\\)" emacs-version)
+    (erlang-string-to-int (substring emacs-version
+			      (match-beginning 2) (match-end 2))))
+  "Minor version number of Emacs."))
+
+(defconst erlang-xemacs-p (string-match "Lucid\\|XEmacs" emacs-version)
+  "Non-nil when running under XEmacs or Lucid Emacs.")
+
+(defvar erlang-xemacs-popup-menu '("Erlang Mode Commands" . nil)
+  "Common popup menu for all buffers in Erlang mode.
+
+This variable is destructively modified every time the Erlang menu
+is modified.  The effect is that all changes take effect in all
+buffers in Erlang mode, just like under GNU Emacs.
+
+Never EVER set this variable!")
 
 (defvar erlang-menu-items '(erlang-menu-base-items
 			    erlang-menu-skel-items
@@ -131,7 +156,8 @@ variable.")
       nil
       ("Align Arrows" erlang-align-arrows)))
     ("Syntax Highlighting"
-     (("Level 3" erlang-font-lock-level-3)
+     (("Level 4" erlang-font-lock-level-4)
+      ("Level 3" erlang-font-lock-level-3)
       ("Level 2" erlang-font-lock-level-2)
       ("Level 1" erlang-font-lock-level-1)
       ("Off" erlang-font-lock-level-0)))
@@ -343,6 +369,7 @@ The test is performed by the function `erlang-test-criteria-list'.")
     erlang-stop-when-at-guard
     erlang-next-lines-empty-p
     erlang-at-keyword-end-p
+    erlang-at-end-of-clause-p
     erlang-at-end-of-function-p)
   "*List of functions controlling `erlang-electric-comma'.
 The functions in this list are called, in order, whenever a comma
@@ -474,7 +501,7 @@ the name of the menu, the second the directory, and the last a flag.
 Should the flag the nil, the directory is absolute, should it be non-nil
 the directory is relative to the variable `erlang-root-dir'.")
 
-(defvar erlang-man-max-menu-size 20
+(defvar erlang-man-max-menu-size 35
   "*The maximum number of menu items in one menu allowed.")
 
 (defvar erlang-man-display-function 'erlang-man-display
@@ -484,26 +511,357 @@ The function is called with one argument, the name of the file
 containing the man page.  Use this variable when the default
 function, `erlang-man-display', does not work on your system.")
 
+(defvar erlang-compile-extra-opts '()
+  "*Additional options to the compilation command.
+This is an elisp list of options. Each option can be either:
+- an atom
+- a dotted pair
+- a string
+Example: '(bin_opt_info (i . \"/path1/include\") (i . \"/path2/include\"))")
+
 (eval-and-compile
-(defconst erlang-atom-regexp "\\([a-z][a-zA-Z0-9_]*\\|'[^\n']*[^\\]'\\)"
-  "Regexp which should match an Erlang atom.
+  (defvar erlang-regexp-modern-p
+    (if (> erlang-emacs-major-version 21) t nil)
+    "Non-nil when this version of Emacs uses a modern version of regexp.
+Supporting \_< and \_> This is determined by checking the version of Emacs used."))
+
+(eval-and-compile
+  (defconst erlang-atom-quoted-regexp 
+    "'\\(?:[^\\']\\|\\(?:\\\\.\\)\\)*'"
+    "Regexp describing a single-quoted atom"))
+
+(eval-and-compile
+  (defconst erlang-atom-regular-regexp
+    (if erlang-regexp-modern-p
+	"\\_<[[:lower:]]\\(?:\\sw\\|\\s_\\)*\\_>"
+      "\\<[[:lower:]]\\(?:\\sw\\|\\s_\\)*\\>")
+    "Regexp describing a regular (non-quoted) atom"))
+
+(eval-and-compile
+  (defconst erlang-atom-regexp 
+    (concat "\\(" erlang-atom-quoted-regexp "\\|" 
+	    erlang-atom-regular-regexp "\\)")
+    "Regexp describing an Erlang atom."))
+
+(eval-and-compile
+  (defconst erlang-atom-regexp-matches 1
+    "Number of regexp parenthesis pairs in `erlang-atom-regexp'.
+  
+This is used to determine parenthesis matches in complex regexps which
+contains `erlang-atom-regexp'."))
+
+
+(eval-and-compile
+  (defconst erlang-variable-regexp 
+    (if erlang-regexp-modern-p 
+	"\\_<\\([[:upper:]_]\\(?:\\sw\\|\\s_\\)*\\)\\_>"
+      "\\<\\([[:upper:]_]\\(?:\\sw\\|\\s_\\)*\\)\\>")
+    "Regexp which should match an Erlang variable.
 
 The regexp must be surrounded with a pair of regexp parentheses."))
-(defconst erlang-atom-regexp-matches 1
-  "Number of regexp parenthesis pairs in `erlang-atom-regexp'.
 
-This is used to determine parenthesis matches in complex regexps which
-contains `erlang-atom-regexp'.")
-
-(defconst erlang-variable-regexp "\\([A-Z_][a-zA-Z0-9_]*\\)"
-  "Regexp which should match an Erlang variable.
-
-The regexp must be surrounded with a pair of regexp parentheses.")
-(defconst erlang-variable-regexp-matches 1
-  "Number of regexp parenthesis pairs in `erlang-variable-regexp'.
+(eval-and-compile
+  (defconst erlang-variable-regexp-matches 1
+    "Number of regexp parenthesis pairs in `erlang-variable-regexp'.
 
 This is used to determine matches in complex regexps which contains
-`erlang-variable-regexp'.")
+`erlang-variable-regexp'."))
+
+
+(eval-and-compile
+  (defun erlang-regexp-opt (strings &optional paren)
+    "Like `regexp-opt', except if PAREN is `symbols', then the
+resulting regexp is surrounded by \\_< and \\_>."
+    (if (eq paren 'symbols)
+	(if erlang-regexp-modern-p
+	    (concat "\\_<" (regexp-opt strings t) "\\_>")
+	  (concat "\\<" (regexp-opt strings t) "\\>"))
+      (regexp-opt strings paren))))
+
+
+(eval-and-compile 
+  (defvar erlang-keywords
+    '("after"
+      "begin"
+      "catch"
+      "case"
+      "cond"
+      "end"
+      "fun"
+      "if"
+      "let"
+      "of"
+      "query"
+      "receive"
+      "try"
+      "when")
+    "Erlang reserved keywords"))
+
+(eval-and-compile
+  (defconst erlang-keywords-regexp (erlang-regexp-opt erlang-keywords 'symbols)))
+  
+(eval-and-compile
+  (defvar erlang-operators
+    '("and"
+      "andalso"
+      "band"
+      "bnot"
+      "bor"
+      "bsl"
+      "bsr"
+      "bxor"
+      "div"
+      "not"
+      "or"
+      "orelse"
+      "rem"
+      "xor")
+    "Erlang operators"))
+;; What about these?
+;; '+' '-' '*' '/' '>', '>=', '<', '=<', '=:=', '==', '=/=', '/='
+
+(eval-and-compile
+  (defconst erlang-operators-regexp (erlang-regexp-opt erlang-operators 'symbols)))
+  
+
+(eval-and-compile
+  (defvar erlang-guards
+    '("is_atom"
+      "is_binary"
+      "is_bitstring"
+      "is_boolean"
+      "is_float"
+      "is_function"
+      "is_integer"
+      "is_list"
+      "is_number"
+      "is_pid"
+      "is_port"
+      "is_record"
+      "is_reference"
+      "is_tuple"
+      "atom"
+      "binary"
+      "bitstring"
+      "boolean"
+      ;;"float"	; Not included to avoid clashes with the bif float/1
+      "function"
+      "integer"
+      "list"
+      "number"
+      "pid"
+      "port"
+      "record"
+      "reference"
+      "tuple")
+    "Erlang guards"))
+
+(eval-and-compile
+  (defconst erlang-guards-regexp (erlang-regexp-opt erlang-guards 'symbols)))
+
+
+(eval-and-compile
+  (defvar erlang-predefined-types
+    '("any"
+      "arity"
+      "byte"
+      "char"
+      "cons"
+      "deep_string"
+      "maybe_improper_list"
+      "mfa"
+      "nil"
+      "none"
+      "non_neg_integer"
+      "nonempty_list"
+      "nonempty_improper_list"
+      "nonempty_maybe_improper_list"
+      "string"
+      "timeout")
+    "Erlang type specs types"))
+
+(eval-and-compile
+  (defconst erlang-predefined-types-regexp 
+    (erlang-regexp-opt erlang-predefined-types 'symbols)))
+
+
+(eval-and-compile
+  (defvar erlang-int-bifs
+    '("abs"
+      "adler32"
+      "adler32_combine"
+      "alive"
+      "apply"
+      "atom_to_binary"
+      "atom_to_list"
+      "binary_to_atom"
+      "binary_to_existing_atom"
+      "binary_to_list"
+      "binary_to_term"
+      "bit_size"
+      "bitstring_to_list"
+      "byte_size"
+      "check_process_code"
+      "contact_binary"
+      "crc32"
+      "crc32_combine"
+      "date"
+      "decode_packet"
+      "delete_module"
+      "disconnect_node"
+      "element"
+      "erase"
+      "exit"
+      "float"
+      "float_to_list"
+      "garbage_collect"
+      "get"
+      "get_keys"
+      "group_leader"
+      "halt"
+      "hd"
+      "integer_to_list"
+      "internal_bif"
+      "iolist_size"
+      "iolist_to_binary"
+      "is_alive"
+      "is_atom"
+      "is_binary"
+      "is_bitstring"
+      "is_boolean"
+      "is_float"
+      "is_function"
+      "is_integer"
+      "is_list"
+      "is_number"
+      "is_pid"
+      "is_port"
+      "is_process_alive"
+      "is_record"
+      "is_reference"
+      "is_tuple"
+      "length"
+      "link"
+      "list_to_atom"
+      "list_to_binary"
+      "list_to_bitstring"
+      "list_to_existing_atom"
+      "list_to_float"
+      "list_to_integer"
+      "list_to_pid"
+      "list_to_tuple"
+      "load_module"
+      "make_ref"
+      "module_loaded"
+      "monitor_node"
+      "node"
+      "node_link"
+      "node_unlink"
+      "nodes"
+      "notalive"
+      "now"
+      "open_port"
+      "pid_to_list"
+      "port_close"
+      "port_command"
+      "port_connect"
+      "port_control"
+      "pre_loaded"
+      "process_flag"
+      "process_info"
+      "processes"
+      "purge_module"
+      "put"
+      "register"
+      "registered"
+      "round"
+      "self"
+      "setelement"
+      "size"
+      "spawn"
+      "spawn_link"
+      "spawn_monitor"
+      "spawn_opt"
+      "split_binary"
+      "statistics"
+      "term_to_binary"
+      "time"
+      "throw"
+      "tl"
+      "trunc"
+      "tuple_size"
+      "tuple_to_list"
+      "unlink"
+      "unregister"
+      "whereis")
+    "Erlang built-in functions (BIFs)"))
+
+(eval-and-compile
+  (defconst erlang-int-bif-regexp (erlang-regexp-opt erlang-int-bifs 'symbols)))
+  
+
+(eval-and-compile
+  (defvar erlang-ext-bifs
+    '("append_element"
+      "bump_reductions"
+      "cancel_timer"
+      "demonitor"
+      "display"
+      "fun_info"
+      "fun_to_list"
+      "function_exported"
+      "get_cookie"
+      "get_stacktrace"
+      "hash"
+      "integer_to_list"
+      "is_builtin"
+      "list_to_integer"
+      "loaded"
+      "localtime"
+      "localtime_to_universaltime"
+      "make_tuple"
+      "max"
+      "md5"
+      "md5_final"
+      "md5_init"
+      "md5_update"
+      "memory"
+      "min"
+      "monitor"
+      "monitor_node"
+      "phash"
+      "phash2"
+      "port_call"
+      "port_info"
+      "port_to_list"
+      "ports"
+      "process_display"
+      "read_timer"
+      "ref_to_list"
+      "resume_process"
+      "send"
+      "send_after"
+      "send_nosuspend"
+      "set_cookie"
+      "start_timer"
+      "suspend_process"
+      "system_flag"
+      "system_info"
+      "system_monitor"
+      "system_profile"
+      "trace"
+      "trace_delivered"
+      "trace_info"
+      "trace_pattern"
+      "universaltime"
+      "universaltime_to_localtime"
+      "yield")
+    "Erlang built-in functions (BIFs) that needs erlang: prefix"))
+
+(eval-and-compile
+  (defconst erlang-ext-bif-regexp
+    (erlang-regexp-opt (append erlang-int-bifs erlang-ext-bifs) 'symbols)))
+
 
 (defvar erlang-defun-prompt-regexp (concat "^" erlang-atom-regexp "\\s *(")
   "Regexp which should match beginning of a clause.")
@@ -522,6 +880,11 @@ The matches all except the extension.  This is useful if the Erlang
 tags system should interpret tags on the form `module:tag' for
 files written in other languages than Erlang.")
 
+(defvar erlang-inferior-shell-split-window t
+  "*If non-nil, when starting an inferior shell, split windows.
+If nil, the inferior shell replaces the window. This is the traditional
+behaviour.")
+
 (defvar erlang-mode-map nil
   "*Keymap used in Erlang mode.")
 (defvar erlang-mode-abbrev-table nil
@@ -529,38 +892,13 @@ files written in other languages than Erlang.")
 (defvar erlang-mode-syntax-table nil
   "Syntax table in use in Erlang-mode buffers.")
 
-(defconst erlang-emacs-major-version
-  (if (boundp 'emacs-major-version)
-      emacs-major-version
-    (string-match "\\([0-9]+\\)\\.\\([0-9]+\\)" emacs-version)
-    (string-to-int (substring emacs-version
-			      (match-beginning 1) (match-end 1))))
-  "Major version number of Emacs.")
-
-(defconst erlang-emacs-minor-version
-  (if (boundp 'emacs-minor-version)
-      emacs-minor-version
-    (string-match "\\([0-9]+\\)\\.\\([0-9]+\\)" emacs-version)
-    (string-to-int (substring emacs-version
-			      (match-beginning 2) (match-end 2))))
-  "Minor version number of Emacs.")
-
-(defconst erlang-xemacs-p (string-match "Lucid\\|XEmacs" emacs-version)
-  "Non-nil when running under XEmacs or Lucid Emacs.")
-
-(defvar erlang-xemacs-popup-menu '("Erlang Mode Commands" . nil)
-  "Common popup menu for all buffers in Erlang mode.
-
-This variable is destructively modified every time the Erlang menu
-is modified.  The effect is that all changes take effect in all
-buffers in Erlang mode, just like under GNU Emacs.
-
-Never EVER set this variable!")
-
 (defconst inferior-erlang-use-cmm (boundp 'minor-mode-overriding-map-alist)
   "Non-nil means use `compilation-minor-mode' in Erlang shell.")
 
 ;; Tempo skeleton templates:
+
+(defvar erlang-tempo-tags nil
+  "Tempo tags for erlang mode")
 
 (defvar erlang-skel
   '(("If"            "if"            erlang-skel-if)
@@ -597,10 +935,12 @@ Never EVER set this variable!")
      erlang-skel-lib erlang-skel-header)
     ("Corba callback" "gen-corba-cb"
      erlang-skel-corba-callback erlang-skel-header)
-    ("Erlang test suite TS frontend" "ts-test-suite"
+    ("Small Common Test suite" "ct-test-suite-s"
+     erlang-skel-ct-test-suite-s erlang-skel-header)
+    ("Large Common Test suite" "ct-test-suite-l"
+     erlang-skel-ct-test-suite-l erlang-skel-header)
+    ("Erlang TS test suite" "ts-test-suite"
      erlang-skel-ts-test-suite erlang-skel-header)
-    ("Erlang test suite CT frontend" "ct-test-suite"
-     erlang-skel-ct-test-suite erlang-skel-header)
   )
   "*Description of all skeleton templates.
 Both functions and menu entries will be created.
@@ -1354,13 +1694,20 @@ Please see the function `tempo-define-template'.")
     "-compile(export_all)." n n
 
     "-include(\"test_server.hrl\")." n n
-    
-    "%% Test server callback functions" n
+
+    (erlang-skel-separator 2)    
+    "%% TEST SERVER CALLBACK FUNCTIONS" n
     (erlang-skel-separator 2)
-    "%% Function: init_per_suite(Config) -> Config" n
-    "%% Config - [tuple()]" n
+    n
+    (erlang-skel-separator 2)
+    "%% Function: init_per_suite(Config0) -> Config1 | {skip,Reason}" n
+    "%%" n
+    "%% Config0 = Config1 = [tuple()]" n
     "%%   A list of key/value pairs, holding the test case configuration." n
-    "%% Description: Initialization before the whole suite" n
+    "%% Reason = term()" n
+    "%%   The reason for skipping the suite." n
+    "%%" n
+    "%% Description: Initialization before the suite." n
     "%%" n
     "%% Note: This function is free to add any key/value pairs to the Config" n
     "%% variable, but should NOT alter/remove any existing entries." n
@@ -1369,112 +1716,26 @@ Please see the function `tempo-define-template'.")
     "Config." n n
 
     (erlang-skel-separator 2)
-    "%% Function: end_per_suite(Config) -> _" n
-    "%% Config - [tuple()]" n
+    "%% Function: end_per_suite(Config) -> void()" n
+    "%%" n
+    "%% Config = [tuple()]" n
     "%%   A list of key/value pairs, holding the test case configuration." n
-    "%% Description: Cleanup after the whole suite" n
+    "%%" n
+    "%% Description: Cleanup after the suite." n
     (erlang-skel-separator 2)
     "end_per_suite(_Config) ->" n >
     "ok." n n
 
     (erlang-skel-separator 2)
-    "%% Function: init_per_testcase(TestCase, Config) -> Config" n
-    "%% Case - atom()" n
-    "%%   Name of the test case that is about to be run." n
-    "%% Config - [tuple()]" n
+    "%% Function: init_per_testcase(TestCase, Config0) -> Config1 |" n 
+    "%%                                                   {skip,Reason}" n
+    "%% TestCase = atom()" n
+    "%%   Name of the test case that is about to run." n
+    "%% Config0 = Config1 = [tuple()]" n
     "%%   A list of key/value pairs, holding the test case configuration." n
+    "%% Reason = term()" n
+    "%%   The reason for skipping the test case." n
     "%%" n
-    "%% Description: Initialization before each test case" n
-    "%%" n
-    "%% Note: This function is free to add any key/value pairs to the Config" n
-    "%% variable, but should NOT alter/remove any existing entries." n
-    "%% Description: Initialization before each test case" n
-    (erlang-skel-separator 2)
-    "init_per_testcase(_TestCase, Config) ->" n >
-    "Config." n n
-
-    (erlang-skel-separator 2)
-    "%% Function: end_per_testcase(TestCase, Config) -> _" n
-    "%% Case - atom()" n
-    "%%   Name of the test case that is about to be run." n
-    "%% Config - [tuple()]" n
-    "%%   A list of key/value pairs, holding the test case configuration." n
-    "%% Description: Cleanup after each test case" n
-    (erlang-skel-separator 2)
-    "end_per_testcase(_TestCase, _Config) ->" n >
-    "ok."n n
-
-    (erlang-skel-separator 2)
-    "%% Function: all(Clause) -> TestCases" n
-    "%% Clause - atom() - suite | doc" n
-    "%% TestCases - [Case] " n
-    "%% Case - atom()" n
-    "%%   Name of a test case." n
-    "%% Description: Returns a list of all test cases in this test suite" n
-    (erlang-skel-separator 2)
-    "all(doc) -> " n >
-    "[\"Describe the main purpose of this suite\"];" n n
-    "all(suite) -> " n >
-    "[]." n n
-    
-    "%% Test cases starts here." n
-    (erlang-skel-separator 2)
-    "test_case(doc) -> " n >
-    "[\"Describe the main purpose of test case\"];" n n
-    "test_case(suite) -> " n >
-    "[];" n n
-    "test_case(Config) when is_list(Config) -> " n >
-    "ok." n
-   )
- "*The template of a library module.
-Please see the function `tempo-define-template'.")
-(defvar erlang-skel-ct-test-suite
- '((erlang-skel-include erlang-skel-large-header)
-   "%% Note: This directive should only be used in test suites." n
-    "-compile(export_all)." n n
-
-    "-include(\"ct.hrl\")." n n
-
-    "%% Test server callback functions" n
-    (erlang-skel-separator 2)
-    "%% Function: suite() -> Info" n
-    "%% Info - [tuple()]" n
-    "%%   List of key/value pairs, default data parameters for the suite." n
-    "%% Description:  Return list of tuples to set default data for the suite." n
-    "%%" n
-    "%% Note: The suite/0 function is only meant to be used to return the" n
-    "%% default data list, not perform any other operations." n  
-    (erlang-skel-separator 2) 
-    "suite() ->" n >
-    "[{timetrap, {minutes, 10}}]." n n
-
-    (erlang-skel-separator 2)
-    "%% Function: init_per_suite(Config) -> Config" n
-    "%% Config - [tuple()]" n
-    "%%   A list of key/value pairs, holding the test case configuration." n
-    "%% Description: Initialization before the whole suite." n
-    "%%" n
-    "%% Note: This function is free to add any key/value pairs to the Config" n
-    "%% variable, but should NOT alter/remove any existing entries." n
-    (erlang-skel-separator 2) 
-    "init_per_suite(Config) ->" n >
-    "Config." n n
-
-    (erlang-skel-separator 2)
-    "%% Function: end_per_suite(Config) -> _" n
-    "%% Config - [tuple()]" n
-    "%%   A list of key/value pairs, holding the test case configuration." n
-    "%% Description: Cleanup after the whole suite." n
-    (erlang-skel-separator 2)
-    "end_per_suite(_Config) ->" n >
-    "ok." n n
-
-    (erlang-skel-separator 2)
-    "%% Function: init_per_testcase(TestCase, Config) -> Config" n
-    "%% TestCase - atom()" n
-    "%%   Name of the test case that is about to be run." n
-    "%% Config - [tuple()]" n
-    "%%   A list of key/value pairs, holding the test case configuration." n
     "%% Description: Initialization before each test case." n
     "%%" n
     "%% Note: This function is free to add any key/value pairs to the Config" n
@@ -1484,48 +1745,406 @@ Please see the function `tempo-define-template'.")
     "Config." n n
 
     (erlang-skel-separator 2)
-    "%% Function: end_per_testcase(TestCase, Config) -> _" n
-    "%% TestCase - atom()" n
-    "%%   Name of the test case that is about to be run." n
-    "%% Config - [tuple()]" n
+    "%% Function: end_per_testcase(TestCase, Config) -> void()" n
+    "%%" n
+    "%% TestCase = atom()" n
+    "%%   Name of the test case that is finished." n
+    "%% Config = [tuple()]" n
     "%%   A list of key/value pairs, holding the test case configuration." n
+    "%%" n
     "%% Description: Cleanup after each test case." n
     (erlang-skel-separator 2)
     "end_per_testcase(_TestCase, _Config) ->" n >
     "ok."n n
 
     (erlang-skel-separator 2)
-    "%% Function: all() -> TestCases" n
-    "%% TestCases - [Case] " n
-    "%% Case - atom()" n
+    "%% Function: all(Clause) -> Descr | Spec | {skip,Reason}" n
+    "%%" n
+    "%% Clause = doc | suite" n
+    "%%   Indicates expected return value." n
+    "%% Descr = [string()] | []" n
+    "%%   String that describes the test suite." n
+    "%% Spec = [TestCase]" n
+    "%%   A test specification." n
+    "%% TestCase = ConfCase | atom()" n
+    "%%   Configuration case, or the name of a test case function." n
+    "%% ConfCase = {conf,Init,Spec,End} |" n
+    "%%            {conf,Properties,Init,Spec,End}" n
+    "%% Init = End = {Mod,Func} | Func" n
+    "%%   Initialization and cleanup function." n
+    "%% Mod = Func = atom()" n
+    "%% Properties = [parallel | sequence | Shuffle | {RepeatType,N}]" n
+    "%%   Execution properties of the test cases (may be combined)." n
+    "%% Shuffle = shuffle | {shuffle,Seed}" n
+    "%%   To get cases executed in random order." n
+    "%% Seed = {integer(),integer(),integer()}" n
+    "%% RepeatType = repeat | repeat_until_all_ok | repeat_until_all_fail |" n
+    "%%              repeat_until_any_ok | repeat_until_any_fail" n
+    "%%   To get execution of cases repeated." n
+    "%% N = integer() | forever" n
+    "%% Reason = term()" n
+    "%%   The reason for skipping the test suite." n
+    "%%" n
+    "%% Description: Returns a description of the test suite when" n
+    "%%              Clause == doc, and a test specification (list" n
+    "%%              of the conf and test cases in the suite) when" n
+    "%%              Clause == suite." n
+    (erlang-skel-separator 2)
+    "all(doc) -> " n >
+    "[\"Describe the main purpose of this suite\"];" n n
+    "all(suite) -> " n >
+    "[a_test_case]." n n
+    n
+    (erlang-skel-separator 2)
+    "%% TEST CASES" n
+    (erlang-skel-separator 2)
+    n
+    (erlang-skel-separator 2)
+    "%% Function: TestCase(Arg) -> Descr | Spec | ok | exit() | {skip,Reason}" n
+    "%%" n
+    "%% Arg = doc | suite | Config" n
+    "%%   Indicates expected behaviour and return value." n
+    "%% Config = [tuple()]" n
+    "%%   A list of key/value pairs, holding the test case configuration." n
+    "%% Descr = [string()] | []" n
+    "%%   String that describes the test case." n 
+    "%% Spec = [tuple()] | []" n
+    "%%   A test specification, see all/1." n
+    "%% Reason = term()" n
+    "%%   The reason for skipping the test case." n
+    "%%" n
+    "%% Description: Test case function. Returns a description of the test" n
+    "%%              case (doc), then returns a test specification (suite)," n
+    "%%              or performs the actual test (Config)." n
+    (erlang-skel-separator 2)
+    "a_test_case(doc) -> " n >
+    "[\"Describe the main purpose of this test case\"];" n n
+    "a_test_case(suite) -> " n >
+    "[];" n n
+    "a_test_case(Config) when is_list(Config) -> " n >
+    "ok." n
+   )
+ "*The template of a library module.
+Please see the function `tempo-define-template'.")
+
+(defvar erlang-skel-ct-test-suite-l
+ '((erlang-skel-include erlang-skel-large-header)
+   "%% Note: This directive should only be used in test suites." n
+    "-compile(export_all)." n n
+
+    "-include(\"ct.hrl\")." n n
+
+    (erlang-skel-separator 2)
+    "%% COMMON TEST CALLBACK FUNCTIONS" n
+    (erlang-skel-separator 2)
+    n
+    (erlang-skel-separator 2)
+    "%% Function: suite() -> Info" n
+    "%%" n
+    "%% Info = [tuple()]" n
+    "%%   List of key/value pairs." n
+    "%%" n
+    "%% Description: Returns list of tuples to set default properties" n
+    "%%              for the suite." n
+    "%%" n
+    "%% Note: The suite/0 function is only meant to be used to return" n
+    "%% default data values, not perform any other operations." n  
+    (erlang-skel-separator 2) 
+    "suite() ->" n >
+    "[{timetrap,{minutes,10}}]." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: init_per_suite(Config0) ->" n
+    "%%               Config1 | {skip,Reason} | {skip_and_save,Reason,Config1}" n
+    "%%" n
+    "%% Config0 = Config1 = [tuple()]" n
+    "%%   A list of key/value pairs, holding the test case configuration." n
+    "%% Reason = term()" n
+    "%%   The reason for skipping the suite." n
+    "%%" n
+    "%% Description: Initialization before the suite." n
+    "%%" n
+    "%% Note: This function is free to add any key/value pairs to the Config" n
+    "%% variable, but should NOT alter/remove any existing entries." n
+    (erlang-skel-separator 2) 
+    "init_per_suite(Config) ->" n >
+    "Config." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: end_per_suite(Config0) -> void() | {save_config,Config1}" n
+    "%%" n
+    "%% Config0 = Config1 = [tuple()]" n
+    "%%   A list of key/value pairs, holding the test case configuration." n
+    "%%" n
+    "%% Description: Cleanup after the suite." n
+    (erlang-skel-separator 2)
+    "end_per_suite(_Config) ->" n >
+    "ok." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: init_per_group(GroupName, Config0) ->" n
+    "%%               Config1 | {skip,Reason} | {skip_and_save,Reason,Config1}" n
+    "%%" n
+    "%% GroupName = atom()" n
+    "%%   Name of the test case group that is about to run." n
+    "%% Config0 = Config1 = [tuple()]" n
+    "%%   A list of key/value pairs, holding configuration data for the group." n
+    "%% Reason = term()" n
+    "%%   The reason for skipping all test cases and subgroups in the group." n
+    "%%" n
+    "%% Description: Initialization before each test case group." n
+    (erlang-skel-separator 2)
+    "init_per_group(_GroupName, Config) ->" n >
+    "Config." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: end_per_group(GroupName, Config0) ->" n
+    "%%               void() | {save_config,Config1}" n
+    "%%" n
+    "%% GroupName = atom()" n
+    "%%   Name of the test case group that is finished." n
+    "%% Config0 = Config1 = [tuple()]" n
+    "%%   A list of key/value pairs, holding configuration data for the group." n
+    "%%" n
+    "%% Description: Cleanup after each test case group." n
+    (erlang-skel-separator 2)
+    "end_per_group(_GroupName, _Config) ->" n >
+    "ok." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: init_per_testcase(TestCase, Config0) ->" n
+    "%%               Config1 | {skip,Reason} | {skip_and_save,Reason,Config1}" n
+    "%%" n
+    "%% TestCase = atom()" n
+    "%%   Name of the test case that is about to run." n
+    "%% Config0 = Config1 = [tuple()]" n
+    "%%   A list of key/value pairs, holding the test case configuration." n
+    "%% Reason = term()" n
+    "%%   The reason for skipping the test case." n
+    "%%" n
+    "%% Description: Initialization before each test case." n
+    "%%" n
+    "%% Note: This function is free to add any key/value pairs to the Config" n
+    "%% variable, but should NOT alter/remove any existing entries." n
+    (erlang-skel-separator 2)
+    "init_per_testcase(_TestCase, Config) ->" n >
+    "Config." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: end_per_testcase(TestCase, Config0) ->" n 
+    "%%               void() | {save_config,Config1} | {fail,Reason}" n
+    "%%" n
+    "%% TestCase = atom()" n
+    "%%   Name of the test case that is finished." n
+    "%% Config0 = Config1 = [tuple()]" n
+    "%%   A list of key/value pairs, holding the test case configuration." n
+    "%% Reason = term()" n
+    "%%   The reason for failing the test case." n
+    "%%" n
+    "%% Description: Cleanup after each test case." n
+    (erlang-skel-separator 2)
+    "end_per_testcase(_TestCase, _Config) ->" n >
+    "ok." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: groups() -> [Group]" n
+    "%%" n
+    "%% Group = {GroupName,Properties,GroupsAndTestCases}" n
+    "%% GroupName = atom()" n
+    "%%   The name of the group." n
+    "%% Properties = [parallel | sequence | Shuffle | {RepeatType,N}]" n
+    "%%   Group properties that may be combined." n
+    "%% GroupsAndTestCases = [Group | {group,GroupName} | TestCase]" n
+    "%% TestCase = atom()" n
+    "%%   The name of a test case." n
+    "%% Shuffle = shuffle | {shuffle,Seed}" n
+    "%%   To get cases executed in random order." n
+    "%% Seed = {integer(),integer(),integer()}" n
+    "%% RepeatType = repeat | repeat_until_all_ok | repeat_until_all_fail |" n
+    "%%              repeat_until_any_ok | repeat_until_any_fail" n
+    "%%   To get execution of cases repeated." n
+    "%% N = integer() | forever" n
+    "%%" n
+    "%% Description: Returns a list of test case group definitions." n
+    (erlang-skel-separator 2)
+    "groups() ->" n >
+    "[]." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: all() -> GroupsAndTestCases | {skip,Reason}" n
+    "%%" n
+    "%% GroupsAndTestCases = [{group,GroupName} | TestCase]" n
+    "%% GroupName = atom()" n
+    "%%   Name of a test case group." n
+    "%% TestCase = atom()" n
     "%%   Name of a test case." n
-    "%% Description: Returns a list of all test cases in this test suite." n
+    "%% Reason = term()" n
+    "%%   The reason for skipping all groups and test cases." n
+    "%%" n
+    "%% Description: Returns the list of groups and test cases that" n 
+    "%%              are to be executed." n
     (erlang-skel-separator 2)
     "all() -> " n >
-    "[]." n n
+    "[my_test_case]." n n
     
-    "%% Test cases start here." n
+    n
     (erlang-skel-separator 2)
-    "test_case() -> " n >
+    "%% TEST CASES" n
+    (erlang-skel-separator 2)
+    n
+
+    (erlang-skel-separator 2)
+    "%% Function: TestCase() -> Info" n
+    "%%" n
+    "%% Info = [tuple()]" n
+    "%%   List of key/value pairs." n
+    "%%" n
+    "%% Description: Test case info function - returns list of tuples to set" n
+    "%%              properties for the test case." n
+    "%%" n
+    "%% Note: This function is only meant to be used to return a list of" n
+    "%% values, not perform any other operations." n  
+    (erlang-skel-separator 2)
+    "my_test_case() -> " n >
     "[]." n n
-    "test_case(Config) when is_list(Config) -> " n >
+
+    (erlang-skel-separator 2)
+    "%% Function: TestCase(Config0) ->" n
+    "%%               ok | exit() | {skip,Reason} | {comment,Comment} |" n
+    "%%               {save_config,Config1} | {skip_and_save,Reason,Config1}" n
+    "%%" n
+    "%% Config0 = Config1 = [tuple()]" n
+    "%%   A list of key/value pairs, holding the test case configuration." n
+    "%% Reason = term()" n
+    "%%   The reason for skipping the test case." n
+    "%% Comment = term()" n
+    "%%   A comment about the test case that will be printed in the html log." n
+    "%%" n
+    "%% Description: Test case function. (The name of it must be specified in" n
+    "%%              the all/0 list or in a test case group for the test case" n
+    "%%              to be executed)." n
+    (erlang-skel-separator 2)
+    "my_test_case(_Config) -> " n >
+    "ok." n
+    )
+ "*The template of a library module.
+Please see the function `tempo-define-template'.")
+
+(defvar erlang-skel-ct-test-suite-s
+ '((erlang-skel-include erlang-skel-large-header)
+    "-compile(export_all)." n n
+
+    "-include(\"ct.hrl\")." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: suite() -> Info" n
+    "%% Info = [tuple()]" n
+    (erlang-skel-separator 2) 
+    "suite() ->" n >
+    "[{timetrap,{seconds,30}}]." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: init_per_suite(Config0) ->" n
+    "%%               Config1 | {skip,Reason} | {skip_and_save,Reason,Config1}" n
+    "%% Config0 = Config1 = [tuple()]" n
+    "%% Reason = term()" n
+    (erlang-skel-separator 2) 
+    "init_per_suite(Config) ->" n >
+    "Config." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: end_per_suite(Config0) -> void() | {save_config,Config1}" n
+    "%% Config0 = Config1 = [tuple()]" n
+    (erlang-skel-separator 2)
+    "end_per_suite(_Config) ->" n >
+    "ok." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: init_per_group(GroupName, Config0) ->" n
+    "%%               Config1 | {skip,Reason} | {skip_and_save,Reason,Config1}" n
+    "%% GroupName = atom()" n
+    "%% Config0 = Config1 = [tuple()]" n
+    "%% Reason = term()" n
+    (erlang-skel-separator 2)
+    "init_per_group(_GroupName, Config) ->" n >
+    "Config." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: end_per_group(GroupName, Config0) ->" n
+    "%%               void() | {save_config,Config1}" n
+    "%% GroupName = atom()" n
+    "%% Config0 = Config1 = [tuple()]" n
+    (erlang-skel-separator 2)
+    "end_per_group(_GroupName, _Config) ->" n >
+    "ok." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: init_per_testcase(TestCase, Config0) ->" n
+    "%%               Config1 | {skip,Reason} | {skip_and_save,Reason,Config1}" n
+    "%% TestCase = atom()" n
+    "%% Config0 = Config1 = [tuple()]" n
+    "%% Reason = term()" n
+    (erlang-skel-separator 2)
+    "init_per_testcase(_TestCase, Config) ->" n >
+    "Config." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: end_per_testcase(TestCase, Config0) ->" n 
+    "%%               void() | {save_config,Config1} | {fail,Reason}" n
+    "%% TestCase = atom()" n
+    "%% Config0 = Config1 = [tuple()]" n
+    "%% Reason = term()" n
+    (erlang-skel-separator 2)
+    "end_per_testcase(_TestCase, _Config) ->" n >
+    "ok." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: groups() -> [Group]" n
+    "%% Group = {GroupName,Properties,GroupsAndTestCases}" n
+    "%% GroupName = atom()" n
+    "%% Properties = [parallel | sequence | Shuffle | {RepeatType,N}]" n
+    "%% GroupsAndTestCases = [Group | {group,GroupName} | TestCase]" n
+    "%% TestCase = atom()" n
+    "%% Shuffle = shuffle | {shuffle,{integer(),integer(),integer()}}" n
+    "%% RepeatType = repeat | repeat_until_all_ok | repeat_until_all_fail |" n
+    "%%              repeat_until_any_ok | repeat_until_any_fail" n
+    "%% N = integer() | forever" n
+    (erlang-skel-separator 2)
+    "groups() ->" n >
+    "[]." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: all() -> GroupsAndTestCases | {skip,Reason}" n
+    "%% GroupsAndTestCases = [{group,GroupName} | TestCase]" n
+    "%% GroupName = atom()" n
+    "%% TestCase = atom()" n
+    "%% Reason = term()" n
+    (erlang-skel-separator 2)
+    "all() -> " n >
+    "[my_test_case]." n n
+    
+    (erlang-skel-separator 2)
+    "%% Function: TestCase() -> Info" n
+    "%% Info = [tuple()]" n
+    (erlang-skel-separator 2)
+    "my_test_case() -> " n >
+    "[]." n n
+
+    (erlang-skel-separator 2)
+    "%% Function: TestCase(Config0) ->" n
+    "%%               ok | exit() | {skip,Reason} | {comment,Comment} |" n
+    "%%               {save_config,Config1} | {skip_and_save,Reason,Config1}" n
+    "%% Config0 = Config1 = [tuple()]" n
+    "%% Reason = term()" n
+    "%% Comment = term()" n
+    (erlang-skel-separator 2)
+    "my_test_case(_Config) -> " n >
     "ok." n
     )
  "*The template of a library module.
 Please see the function `tempo-define-template'.")
 
 ;; Font-lock variables
-
-(defvar erlang-font-lock-modern-p
-  (cond ((>= erlang-emacs-major-version 20) t)
-	(erlang-xemacs-p (>= erlang-emacs-minor-version 14))
-	((= erlang-emacs-major-version 19) (>= erlang-emacs-minor-version 29))
-	(t nil))
-  "Non-nil when this version of Emacs uses a modern version of Font Lock.
-
-This is determined by checking the version of Emacs used, the actual
-font-lock code is not loaded.")
-
 
 ;; The next few variables define different Erlang font-lock patterns.
 ;; They could be appended to form a custom font-lock appearance.
@@ -1536,151 +2155,146 @@ font-lock code is not loaded.")
 ;; Note that Erlang strings and atoms are highlighted with using
 ;; syntactic analysis.
 
-(defvar erlang-font-lock-keywords-func
+(defvar erlang-font-lock-keywords-function-header
   (list
-   (list (concat "^" erlang-atom-regexp "\\s *(")
+   (list (concat "^" erlang-atom-regexp "\\s-*(")
 	 1 'font-lock-function-name-face t))
   "Font lock keyword highlighting a function header.")
+
+(defvar erlang-font-lock-keywords-int-bifs
+  (list
+   (list (concat erlang-int-bif-regexp "\\s-*(")
+         1 'font-lock-builtin-face))
+  "Font lock keyword highlighting built in functions.")
+
+(defvar erlang-font-lock-keywords-ext-bifs
+  (list
+   (list (concat "\\<\\(erlang\\)\\s-*:\\s-*" erlang-ext-bif-regexp "\\s-*(")
+	 '(1 'font-lock-builtin-face)
+	 '(2 'font-lock-builtin-face)))
+  "Font lock keyword highlighting built in functions.")
+
+(defvar erlang-font-lock-keywords-int-function-calls
+  (list
+   (list (concat erlang-atom-regexp "\\s-*(")
+         1 'font-lock-type-face))
+  "Font lock keyword highlighting an internal function call.")
+
+(defvar erlang-font-lock-keywords-ext-function-calls
+  (list
+   (list (concat erlang-atom-regexp "\\s-*:\\s-*"
+                 erlang-atom-regexp "\\s-*(")
+         '(1 'font-lock-type-face)
+	 '(2 'font-lock-type-face)))
+  "Font lock keyword highlighting an external function call.")
+
+(defvar erlang-font-lock-keywords-fun-n
+  (list
+   (list (concat "\\(" erlang-atom-regexp "/[0-9]+\\)")
+         1 'font-lock-type-face))
+  "Font lock keyword highlighting a fun descriptor in F/N format.")
+
+(defvar erlang-font-lock-keywords-operators
+  (list
+   (list erlang-operators-regexp
+         1 'font-lock-builtin-face))
+  "Font lock keyword highlighting Erlang operators.")
 
 (defvar erlang-font-lock-keywords-dollar
   (list
    (list "\\(\\$\\([^\\]\\|\\\\\\([^0-7^\n]\\|[0-7]+\\|\\^[a-zA-Z]\\)\\)\\)"
-	 1 'font-lock-string-face))
+	 1 'font-lock-constant-face))
   "Font lock keyword highlighting numbers in ASCII form (e.g. $A).")
 
 (defvar erlang-font-lock-keywords-arrow
   (list
-   (list "\\(->\\|:-\\)\\(\\s \\|$\\)" 2 'font-lock-function-name-face))
+   (list "->\\(\\s \\|$\\)" 1 'font-lock-function-name-face))
   "Font lock keyword highlighting clause arrow.")
 
 (defvar erlang-font-lock-keywords-lc
   (list
-   (list "\\(<-\\)\\(\\s \\|$\\)" 1 'font-lock-keyword-face)
-   (list "\\(||\\)\\(\\s \\|$\\)" 1 'font-lock-keyword-face))
+   (list "\\(<-\\|<=\\|||\\)\\(\\s \\|$\\)" 1 'font-lock-keyword-face))
   "Font lock keyword highlighting list comprehension operators.")
 
 (defvar erlang-font-lock-keywords-keywords
   (list
-   (list (concat "\\<\\(a\\(fter\\|ndalso\\)\\|begin\\|c\\(atch\\|ase\\)"
-		 "\\|end\\|fun\\|if\\|o\\(f\\|relse\\)\\|receive\\|try\\|when"
-		 "\\|query\\)\\([^a-zA-Z0-9_]\\|$\\)")
-	 1 'font-lock-keyword-face))
+   (list erlang-keywords-regexp 1 'font-lock-keyword-face))
   "Font lock keyword highlighting Erlang keywords.")
 
 (defvar erlang-font-lock-keywords-attr
   (list
-   (list (concat "^\\(-" erlang-atom-regexp "\\)\\s *\\(\\.\\|(\\)")
-	 1 'font-lock-function-name-face))
+   (list (concat "^\\(-" erlang-atom-regexp "\\)\\(\\s-\\|\\.\\|(\\)")	 
+	 1 (if (boundp 'font-lock-preprocessor-face)
+	       'font-lock-preprocessor-face
+	     'font-lock-function-name-face)))
   "Font lock keyword highlighting attributes.")
 
 (defvar erlang-font-lock-keywords-quotes
   (list
    (list "`\\([-+a-zA-Z0-9_:*][-+a-zA-Z0-9_:*]+\\)'"
 	 1
-	 (if erlang-font-lock-modern-p
-	     'font-lock-reference-face
-	   'font-lock-keyword-face)
+	 'font-lock-keyword-face
 	 t))
   "Font lock keyword highlighting words in single quotes in comments.
 
 This is not the highlighting of Erlang strings and atoms, which
 are highlighted by syntactic analysis.")
 
-;; Note: The guard `float' collides with the bif `float'.
 (defvar erlang-font-lock-keywords-guards
   (list
-   (list
-    (concat "\\<\\("
-	    "\\(is_\\)*\\(atom\\|boolean\\|function\\|binary\\|constant"
-	    "\\|float\\|integer\\|list\\|number\\|p\\(id\\|ort\\)\\|"
-	    "re\\(ference\\|cord\\)\\|tuple"
-	    "\\)\\)\\s *(")
-
-    1
-    (if erlang-font-lock-modern-p
-	'font-lock-reference-face
-      'font-lock-keyword-face)))
+   (list (concat "[^:]" erlang-guards-regexp "\\s-*(")
+	 1 'font-lock-builtin-face))
   "Font lock keyword highlighting guards.")
 
-(defvar erlang-font-lock-keywords-bifs
+(defvar erlang-font-lock-keywords-predefined-types
   (list
-   (list
-    (concat
-     "\\<\\("
-     "a\\(bs\\|live\\|pply\\|tom_to_list\\)\\|"
-     "binary_to_\\(list\\|term\\)\\|"
-     "concat_binary\\|d\\(ate\\|isconnect_node\\)\\|"
-     "e\\(lement\\|rase\\|xit\\)\\|"
-     "float\\(\\|_to_list\\)\\|"
-     "g\\(arbage_collect\\|et\\(\\|_keys\\)\\|roup_leader\\)\\|"
-     "h\\(alt\\|d\\)\\|"
-     "i\\(nte\\(ger_to_list\\|rnal_bif\\)\\|s_alive\\)\\|"
-     "l\\(ength\\|i\\(nk\\|st_to_\\(atom\\|binary\\|float\\|integer"
-     "\\|pid\\|tuple\\)\\)\\)\\|"
-     "make_ref\\|no\\(de\\(\\|_\\(link\\|unlink\\)\\|s\\)\\|talive\\)\\|"
-     "open_port\\|"
-     "p\\(id_to_list\\|rocess\\(_\\(flag\\|info\\)\\|es\\)\\|ut\\)\\|"
-     "r\\(egister\\(\\|ed\\)\\|ound\\)\\|"
-     "s\\(e\\(lf\\|telement\\)\\|ize\\|"
-     "p\\(awn\\(\\|_link\\)\\|lit_binary\\)\\|tatistics\\)\\|"
-     "t\\(erm_to_binary\\|hrow\\|ime\\|l\\|"
-     "r\\(ace\\|unc\\)\\|uple_to_list\\)\\|"
-     "un\\(link\\|register\\)\\|whereis"
-     "\\)\\s *(")
-    1
-    'font-lock-keyword-face))
-  "Font lock keyword highlighting built in functions.")
+   (list (concat "[^:]" erlang-predefined-types-regexp "\\s-*(")
+	 1 'font-lock-builtin-face))
+  "Font lock keyword highlighting predefined types.")
+
 
 (defvar erlang-font-lock-keywords-macros
   (list
-   (list (concat "?\\s *\\(" erlang-atom-regexp
-		 "\\|" erlang-variable-regexp "\\)\\>")
-	 1 (if erlang-font-lock-modern-p
-	       'font-lock-reference-face
-	     'font-lock-type-face))
-   (list (concat "^-\\(define\\|ifn?def\\)\\s *(\\s *\\(" erlang-atom-regexp
-		 "\\|" erlang-variable-regexp "\\)\\>")
-	 2 (if erlang-font-lock-modern-p
-	       'font-lock-reference-face
-	     'font-lock-type-face)))
+   (list (concat "?\\s-*\\(" erlang-atom-regexp
+		 "\\|" erlang-variable-regexp "\\)")
+	 1 'font-lock-type-face)
+   (list (concat "^\\(-\\(?:define\\|ifn?def\\)\\)\\s-*(\\s-*\\(" erlang-atom-regexp
+		 "\\|" erlang-variable-regexp "\\)")
+	 (list 1 'font-lock-preprocessor-face t)
+	 (list 3 'font-lock-type-face t t))
+   (list "^-e\\(lse\\|ndif\\)\\>" 0 'font-lock-preprocessor-face t))
   "Font lock keyword highlighting macros.
 This must be placed in front of `erlang-font-lock-keywords-vars'.")
 
 (defvar erlang-font-lock-keywords-records
   (list
-   (list (concat "#\\s *" erlang-atom-regexp "\\>")
-	 1 'font-lock-type-face)
+   (list (concat "#\\s *" erlang-atom-regexp)
+         1 'font-lock-type-face)
    ;; Don't highlight numerical constants.
-   (list "\\<[0-9][0-9]?#\\([0-9a-fA_F]+\\)\\>"
-	 1 nil t)
-   (list (concat "^-record(\\s *" erlang-atom-regexp "\\>")
-	 1 'font-lock-type-face))
+   (list (if erlang-regexp-modern-p
+	     "\\_<[0-9]+#\\([0-9a-zA-Z]+\\)"
+	   "\\<[0-9]+#\\([0-9a-zA-Z]+\\)")
+         1 nil t)
+   (list (concat "^-record\\s-*(\\s-*" erlang-atom-regexp)
+         1 'font-lock-type-face))
   "Font lock keyword highlighting Erlang records.
 This must be placed in front of `erlang-font-lock-keywords-vars'.")
 
 (defvar erlang-font-lock-keywords-vars
   (list
-   (list (concat "\\<" erlang-variable-regexp "\\>")
-	 1 (if erlang-font-lock-modern-p
-	       'font-lock-variable-name-face
-	     'font-lock-type-face)))
+   (list (concat "[^#]" erlang-variable-regexp)	; no numerical constants
+	 1 'font-lock-variable-name-face))
   "Font lock keyword highlighting Erlang variables.
-Must be preceded by `erlang-font-lock-keywords-macros' and `-records'
-to work properly.")
+Must be preceded by `erlang-font-lock-keywords-macros' to work properly.")
 
-
-(defvar erlang-font-lock-keywords-1
-  (append erlang-font-lock-keywords-func
-	  erlang-font-lock-keywords-dollar
-	  erlang-font-lock-keywords-arrow
-	  erlang-font-lock-keywords-keywords)
-  ;; DocStringOrig: erlang-font-lock-keywords
+(defvar erlang-font-lock-descr-string
   "Font-lock keywords used by Erlang Mode.
 
 There exists three levels of Font Lock keywords for Erlang:
   `erlang-font-lock-keywords-1' - Function headers and reserved keywords.
   `erlang-font-lock-keywords-2' - Bifs, guards and `single quotes'.
   `erlang-font-lock-keywords-3' - Variables, macros and records.
+  `erlang-font-lock-keywords-4' - Function names, Funs, LCs (not Atoms)
 
 To use a specific level, please set the variable
 `font-lock-maximum-decoration' to the appropriate level.  Note that the
@@ -1689,66 +2303,50 @@ variable must be set before Erlang mode is activated.
 Example:
     (setq font-lock-maximum-decoration 2)")
 
+(defvar erlang-font-lock-keywords-1
+  (append erlang-font-lock-keywords-function-header
+	  erlang-font-lock-keywords-dollar
+	  erlang-font-lock-keywords-arrow
+	  erlang-font-lock-keywords-keywords
+	  )
+  ;; DocStringOrig: erlang-font-lock-keywords
+  erlang-font-lock-descr-string)
 
 (defvar erlang-font-lock-keywords-2
   (append erlang-font-lock-keywords-1
+	  erlang-font-lock-keywords-int-bifs
+	  erlang-font-lock-keywords-ext-bifs
 	  erlang-font-lock-keywords-attr
 	  erlang-font-lock-keywords-quotes
 	  erlang-font-lock-keywords-guards
-	  erlang-font-lock-keywords-bifs)
+	  )
   ;; DocStringCopy: erlang-font-lock-keywords
-  "Font-lock keywords used by Erlang Mode.
-
-There exists three levels of Font Lock keywords for Erlang:
-  `erlang-font-lock-keywords-1' - Function headers and reserved keywords.
-  `erlang-font-lock-keywords-2' - Bifs, guards and `single quotes'.
-  `erlang-font-lock-keywords-3' - Variables, macros and records.
-
-To use a specific level, please set the variable
-`font-lock-maximum-decoration' to the appropriate level.  Note that the
-variable must be set before Erlang mode is activated.
-
-Example:
-    (setq font-lock-maximum-decoration 2)")
-
+  erlang-font-lock-descr-string)
 
 (defvar erlang-font-lock-keywords-3
   (append erlang-font-lock-keywords-2
+	  erlang-font-lock-keywords-operators
 	  erlang-font-lock-keywords-macros
 	  erlang-font-lock-keywords-records
-	  erlang-font-lock-keywords-vars)
+	  erlang-font-lock-keywords-vars
+	  erlang-font-lock-keywords-predefined-types
+	  )
   ;; DocStringCopy: erlang-font-lock-keywords
-  "Font-lock keywords used by Erlang Mode.
+  erlang-font-lock-descr-string)
 
-There exists three levels of Font Lock keywords for Erlang:
-  `erlang-font-lock-keywords-1' - Function headers and reserved keywords.
-  `erlang-font-lock-keywords-2' - Bifs, guards and `single quotes'.
-  `erlang-font-lock-keywords-3' - Variables, macros and records.
-
-To use a specific level, please set the variable
-`font-lock-maximum-decoration' to the appropriate level.  Note that the
-variable must be set before Erlang mode is activated.
-
-Example:
-    (setq font-lock-maximum-decoration 2)")
-
-
-(defvar erlang-font-lock-keywords erlang-font-lock-keywords-3
+(defvar erlang-font-lock-keywords-4
+  (append erlang-font-lock-keywords-3
+          erlang-font-lock-keywords-int-function-calls
+	  erlang-font-lock-keywords-ext-function-calls
+	  erlang-font-lock-keywords-fun-n
+          erlang-font-lock-keywords-lc
+	  )
   ;; DocStringCopy: erlang-font-lock-keywords
-  "Font-lock keywords used by Erlang Mode.
+  erlang-font-lock-descr-string)
 
-There exists three levels of Font Lock keywords for Erlang:
-  `erlang-font-lock-keywords-1' - Function headers and reserved keywords.
-  `erlang-font-lock-keywords-2' - Bifs, guards and `single quotes'.
-  `erlang-font-lock-keywords-3' - Variables, macros and records.
-
-To use a specific level, please set the variable
-`font-lock-maximum-decoration' to the appropriate level.  Note that the
-variable must be set before Erlang mode is activated.
-
-Example:
-    (setq font-lock-maximum-decoration 2)")
-
+(defvar erlang-font-lock-keywords erlang-font-lock-keywords-4
+  ;; DocStringCopy: erlang-font-lock-keywords
+  erlang-font-lock-descr-string)
 
 (defvar erlang-font-lock-syntax-table nil
   "Syntax table used by Font Lock mode.
@@ -1775,21 +2373,26 @@ Lock syntax table.  The effect is that `apply' in the atom
 (or (fboundp 'unless)
     (defmacro unless (condition &rest body)
       "(unless CONDITION BODY...): If CONDITION is false, do BODY, else return nil."
-      (` (if (, condition) 
-	     nil 
-	   (,@ body)))))
+      `((if (, condition) nil ,@body))))
 
 (or (fboundp 'when)
     (defmacro when (condition &rest body)
       "(when CONDITION BODY...): If CONDITION is true, do BODY, else return nil."
-      (` (if (, condition)
-	     (progn (,@ body)) 
-	   nil))))
+      `((if (, condition) (progn ,@body) nil))))
 
 (or (fboundp 'char-before)
     (defmacro char-before (&optional pos)
       "Return the character in the current buffer just before POS."
-      (` (char-after (1- (or (, pos) (point)))))))
+      `( (char-after (1- (or ,pos (point)))))))
+
+;; defvar some obsolete variables, which we still support for
+;; backwardscompatibility reasons.
+(eval-when-compile
+  (defvar comment-indent-hook)
+  (defvar dabbrev-case-fold-search)
+  (defvar tempo-match-finder)
+  (defvar compilation-menu-map)
+  (defvar next-error-last-buffer))
 
 (eval-when-compile
   (if (or (featurep 'bytecomp)
@@ -1802,6 +2405,7 @@ Lock syntax table.  The effect is that `apply' in the atom
 	       (setq byte-compile-warnings
 		     '(free-vars unresolved callargs redefine))))
 	(require 'comint)
+	(require 'tempo)
 	(require 'compile))))
 
 
@@ -1889,9 +2493,13 @@ Other commands:
   (erlang-tags-init)
   (erlang-font-lock-init)
   (erlang-skel-init)
+  (tempo-use-tag-list 'erlang-tempo-tags)
   (run-hooks 'erlang-mode-hook)
   (if (zerop (buffer-size))
-      (run-hooks 'erlang-new-file-hook)))
+      (run-hooks 'erlang-new-file-hook))
+  ;; Doesn't exist in Emacs v21.4; required by Emacs v23.
+  (if (boundp 'after-change-major-mode-hook)
+      (run-hooks 'after-change-major-mode-hook)))
 
 
 (defun erlang-syntax-table-init ()
@@ -1900,7 +2508,11 @@ Other commands:
 	(modify-syntax-entry ?\n ">" table)
 	(modify-syntax-entry ?\" "\"" table)
 	(modify-syntax-entry ?# "." table)
-	(modify-syntax-entry ?$ "'" table)
+;;	(modify-syntax-entry ?$ "\\" table)   ;; Creates problems with indention afterwards
+;;	(modify-syntax-entry ?$ "'" table)    ;; Creates syntax highlighting and indention problems
+	(modify-syntax-entry ?$ "/" table)    ;; Misses the corner case "string that ends with $" 
+	                                      ;; we have to live with that for now..it is the best alternative
+	                                      ;; that can be worked around with "string hat ends with \$" 
 	(modify-syntax-entry ?% "<" table)
 	(modify-syntax-entry ?& "." table)
 	(modify-syntax-entry ?\' "\"" table)
@@ -1942,15 +2554,15 @@ Other commands:
   (define-key map "<"         'erlang-electric-lt)
   (define-key map ">"         'erlang-electric-gt)
   (define-key map "\C-m"      'erlang-electric-newline)
-  (if erlang-xemacs-p
-    (define-key map [(backspace)]      'backward-delete-char-untabify)
-    (define-key map "\177"     'backward-delete-char-untabify))
+  (if (not (boundp 'delete-key-deletes-forward))
+      (define-key map "\177" 'backward-delete-char-untabify)
+    (define-key map [(backspace)] 'backward-delete-char-untabify))
   ;;(unless (boundp 'fill-paragraph-function)
   (define-key map "\M-q"      'erlang-fill-paragraph)
   (unless (boundp 'beginning-of-defun-function)
     (define-key map "\M-\C-a"   'erlang-beginning-of-function)
     (define-key map "\M-\C-e"   'erlang-end-of-function)
-    (define-key map "\M-\C-h"   'erlang-mark-function))
+    (define-key map '(meta control h)   'erlang-mark-function))	; Xemacs
   (define-key map "\M-\t"     'erlang-complete-tag)
   (define-key map "\C-c\M-\t" 'tempo-complete-tag)
   (define-key map "\M-+"      'erlang-find-next-tag)  
@@ -1977,13 +2589,13 @@ Other commands:
   ;; Set up electric character functions to work with
   ;; delsel/pending-del mode. Also, set up text properties for bit
   ;; syntax handling.
-  (mapcar #'(lambda (cmd)
-	      (put cmd 'delete-selection t) ;for delsel (Emacs)
-	      (put cmd 'pending-delete t)) ;for pending-del (XEmacs)
-	  '(erlang-electric-semicolon
-	    erlang-electric-comma
-	    erlang-electric-gt))
-
+  (mapc #'(lambda (cmd)
+	    (put cmd 'delete-selection t) ;for delsel (Emacs)
+	    (put cmd 'pending-delete t)) ;for pending-del (XEmacs)
+	'(erlang-electric-semicolon
+	  erlang-electric-comma
+	  erlang-electric-gt))
+  
   (put 'bitsyntax-open-outer 'syntax-table '(4 . ?>))
   (put 'bitsyntax-open-outer 'rear-nonsticky '(category))
   (put 'bitsyntax-open-inner 'rear-nonsticky '(category))
@@ -2095,13 +2707,17 @@ Other commands:
 	   (set 'font-lock-keywords erlang-font-lock-keywords-1))
 	  ((eq level 2)
 	   (set 'font-lock-keywords erlang-font-lock-keywords-2))
-	  (t
-	   (set 'font-lock-keywords erlang-font-lock-keywords-3))))
+          ((eq level 3)
+           (set 'font-lock-keywords erlang-font-lock-keywords-3))
+          (t
+           (set 'font-lock-keywords erlang-font-lock-keywords-4))))
 
   ;; Modern font-locks can handle the above much more elegantly:
   (set (make-local-variable 'font-lock-defaults)
        '((erlang-font-lock-keywords erlang-font-lock-keywords-1
-				    erlang-font-lock-keywords-2 erlang-font-lock-keywords-3)
+				    erlang-font-lock-keywords-2 
+				    erlang-font-lock-keywords-3 
+				    erlang-font-lock-keywords-4)
 	 nil nil ((?_ . "w")) erlang-beginning-of-clause
 	 (font-lock-mark-block-function . erlang-mark-clause))))
 
@@ -2133,7 +2749,7 @@ This function only handles keywords with elements on the forms:
 This could be used when defining your own special font-lock setup, e.g:
 
 \(setq my-font-lock-keywords
-      (append erlang-font-lock-keywords-func
+      (append erlang-font-lock-keywords-function-header
               erlang-font-lock-keywords-dollar
               (erlang-font-lock-set-face
                erlang-font-lock-keywords-macros 'my-neon-green-face)
@@ -2198,6 +2814,17 @@ plus variables, macros and records."
   (interactive)
   (require 'font-lock)
   (set 'font-lock-keywords erlang-font-lock-keywords-3)
+  (font-lock-mode 1)
+  (funcall (symbol-function 'font-lock-fontify-buffer)))
+
+(defun erlang-font-lock-level-4 ()
+  ;; DocStringCopy: font-cmd
+  "Fontify current buffer at level 4.
+This highlights level 3 features (see `erlang-font-lock-level-2')
+plus variables, macros and records."
+  (interactive)
+  (require 'font-lock)
+  (set 'font-lock-keywords erlang-font-lock-keywords-4)
   (font-lock-mode 1)
   (funcall (symbol-function 'font-lock-fontify-buffer)))
 
@@ -2530,7 +3157,7 @@ menus is created."
 
 (defun erlang-man-make-menu-item (file)
   "Create a menu item containing the name of the man page."
-  (and (string-match ".*/\\([^/]+\\)\\.[^.]$" file)
+  (and (string-match ".+/\\([^/]+\\)\\.\\([124-9]\\|3\\(erl\\)?\\)\\(\\.gz\\)?$" file)
        (let ((page (substring file (match-beginning 1) (match-end 1))))
 	 (list (capitalize page)
 	       (list 'lambda '()
@@ -2541,7 +3168,7 @@ menus is created."
 
 (defun erlang-man-get-files (dir)
   "Return files in directory DIR."
-  (directory-files dir t ".*\\.[0-9]\\'"))
+  (directory-files dir t ".+\\.\\([124-9]\\|3\\(erl\\)?\\)\\(\\.gz\\)?\\'"))
 
 
 (defun erlang-man-module (&optional module)
@@ -2561,7 +3188,7 @@ This function is aware of imported functions."
   (if (or (null module) (string= module ""))
       (error "No Erlang module name given"))
   (let ((dir-list erlang-man-dirs)
-	(pat (concat "/" (regexp-quote module) "\\.[^.]$"))
+	(pat (concat "/" (regexp-quote module) "\\.\\([124-9]\\|3\\(erl\\)?\\)\\(\\.gz\\)?$"))
 	(file nil)
 	file-list)
     (while (and dir-list (null file))
@@ -2702,7 +3329,7 @@ to be used."
     (error nil))
   (if file
       (let ((process-environment (copy-sequence process-environment)))
-	(if (string-match "\\(.*\\)/man[^/]*/\\([^/]+\\)\\.[^.]$" file)
+	(if (string-match "\\(.*\\)/man[^/]*/\\([^.]+\\)\\.\\([124-9]\\|3\\(erl\\)?\\)\\(\\.gz\\)?$" file)
 	    (let ((dir (substring file (match-beginning 1) (match-end 1)))
 		  (page (substring file (match-beginning 2) (match-end 2))))
 	      (if (fboundp 'setenv)
@@ -2774,7 +3401,9 @@ package not be present, this function does nothing."
 			  ;; variables describing the templates take effect
 			  ;; immdiately.
 			  (list (list 'erlang-skel-include (nth 2 (car skel))))
-			  (nth 1 (car skel)))
+			  (nth 1 (car skel))
+			  (car (car skel))
+			  'erlang-tempo-tags)
 		 (setq menu (cons (erlang-skel-make-menu-item
 				   (car skel)) menu))))
 	  (setq skel (cdr skel)))
@@ -2838,18 +3467,20 @@ can contain other `tempo' attributes.  Please see the function
       (setq args (cdr args)))
     (cons 'l (nreverse res))))
 
+(defvar erlang-skel-separator-length 70)
+
 (defun erlang-skel-separator (&optional percent)
   "Return a comment separator."
   (let ((percent (or percent 3)))
     (concat (make-string percent ?%) 
-	    (make-string (- 70 percent) ?-) 
+	    (make-string (- erlang-skel-separator-length percent) ?-) 
 	    "\n")))
 
 (defun erlang-skel-double-separator (&optional percent)
   "Return a comment separator."
   (let ((percent (or percent 3)))
     (concat (make-string percent ?%) 
-	    (make-string (- 70 percent) ?=) 
+	    (make-string (- erlang-skel-separator-length percent) ?=) 
 	    "\n")))
 
 (defun erlang-skel-dd-mmm-yyyy ()
@@ -2857,7 +3488,7 @@ can contain other `tempo' attributes.  Please see the function
 The first character of DD is space if the value is less than 10."
   (let ((date (current-time-string)))
     (format "%2d %s %s"
-	    (string-to-int (substring date 8 10))
+	    (erlang-string-to-int (substring date 8 10))
 	    (substring date 4 7)
 	    (substring date -4))))
 
@@ -2911,8 +3542,9 @@ Return the amount the indentation changed by."
 		 ((eq indent t)
 		  ;; This should never occur here.
 		  (error "Erlang mode error"))
-		 ((= (char-syntax (following-char)) ?\))
-		  (setq indent (1- indent))))
+		 ;;((= (char-syntax (following-char)) ?\))
+		 ;; (setq indent (1- indent)))
+		 )
 	   (setq shift-amt (- indent (current-column)))))
     (if (zerop shift-amt)
 	nil
@@ -2965,8 +3597,9 @@ This is automagically called by the user level function `indent-region'."
 		     ((eq indent t)
 		      ;; This should never occur here.
 		      (error "Erlang mode error"))
-		     ((= (char-syntax (following-char)) ?\))
-		      (setq indent (1- indent))))))
+		     ;;((= (char-syntax (following-char)) ?\))
+		     ;; (setq indent (1- indent)))
+		     )))
 	(if (zerop (- indent (current-column)))
 	    nil
 	  (delete-region indent-point (point))
@@ -3070,67 +3703,59 @@ Value is list (stack token-start token-type in-what)."
 	     (progn
 	       (while (and stack (eq (car (car stack)) '->))
 		 (erlang-pop stack))
-	       (if (and stack (memq (car (car stack)) '(icr begin)))
+	       (if (and stack (memq (car (car stack)) '(icr begin fun try)))
 		   (erlang-pop stack))))
-	    ((looking-at "catch[^,\n\\of]*\n")
+	    ((looking-at "catch.*of")
+	     t)
+	    ((looking-at "catch\\s *\\($\\|%\\|.*->\\)")
 	     ;; Must pop top icr layer, `catch' in try/catch
 	     ;;will push a new layer next.
 	     (progn
 	       (while (and stack (eq (car (car stack)) '->))
 		 (erlang-pop stack))
-	       (if (and stack (memq (car (car stack)) '(icr begin)))
+	       (if (and stack (memq (car (car stack)) '(icr begin try)))
 		   (erlang-pop stack))))
-	    ;;((looking-at "^of$")
-	    ;; Must pop top icr layer, `of' in try/catch
-	    ;;will push a new layer next.
-	    ;; (progn
-	    ;; (while (and stack (eq (car (car stack)) '->))
-	    ;;	 (erlang-pop stack))
-	    ;;     (if (and stack (memq (car (car stack)) '(icr begin)))
-	    ;;   (erlang-pop stack))))
 	    )  
-      (cond ((looking-at "\\(if\\|case\\|receive\\|try\\)[^_a-zA-Z0-9]")
+      (cond ((looking-at "\\(if\\|case\\|receive\\)[^_a-zA-Z0-9]")
 	     ;; Must push a new icr (if/case/receive) layer.
 	     (erlang-push (list 'icr token (current-column)) stack))
+	    ((looking-at "\\(try\\|after\\)[^_a-zA-Z0-9]")
+	     ;; Must handle separately, try catch or try X of -> catch
+	     ;; same for `after', it could be 
+	     ;; receive after Time -> X end, or 
+	     ;; try after X end
+	     (erlang-push (list 'try token (current-column)) stack))
+	    ((looking-at "\\(of\\)[^_a-zA-Z0-9]")
+	     ;; Must handle separately, try X of -> catch
+	     (if (and stack (eq (car (car stack)) 'try))
+		 (let ((try-column (nth 2 (car stack))))
+		   (erlang-pop stack)
+		   (erlang-push (list 'icr token try-column) stack))))
+	    
 	    ((looking-at "\\(fun\\)[^_a-zA-Z0-9]")
-	     ;; Push a new icr layer if we are defining a `fun'
+	     ;; Push a new layer if we are defining a `fun'
 	     ;; expression, not when we are refering an existing
-	     ;; function.
+	     ;; function.  'fun's defines are only indented one level now.
 	     (if (save-excursion
 		   (goto-char (match-end 1))
 		   (erlang-skip-blank to)
 		   (eq (following-char) ?\())
-		 (erlang-push (list 'icr token (current-column)) stack)))
+		 (erlang-push (list 'fun token (current-column)) stack)))
 	    ((looking-at "\\(begin\\|query\\)[^_a-zA-Z0-9]")
 	     (erlang-push (list 'begin token (current-column)) stack))
-	    ;; In test suites you may want to do something like
-	    ;; ?match(Mem when integer(Mem), mnesia:table_info(Tab,
-	    ;; memory)), and then the following if/case/receive
-	    ;; statement will mess up the indentation by fooling the
-	    ;; erlang mode to think the 'when' in the argument is a
-	    ;; "real" when. The following three clauses will avoid
-	    ;; this problem.
-	    ((looking-at "when[^->\.]*if[^->\.]*->"))
-	    ((looking-at "when[^->\.]*case[^->\.]*->"))
-	    ((looking-at "when[^->\.]*receive[^->\.]*->"))
 	    ;; Normal when case
-	    ((looking-at "when [^->\.]*->")
+	    ;;((looking-at "when\\s ")
+	    ;;((looking-at "when\\s *\\($\\|%\\)")
+	    ((looking-at "when[^_a-zA-Z0-9]")
 	     (erlang-push (list 'when token (current-column)) stack))
-	    ((looking-at "after[.]+->")
+	    ((looking-at "catch.*of")
+	     t)
+	    ((looking-at "catch\\s *\\($\\|%\\|.*->\\)")
 	     (erlang-push (list 'icr token (current-column)) stack))
-	    ((looking-at "after[^_a-zA-Z0-9->]")
-	     ;; Probably in try-statment, fake "->" to get right
-	     ;; indentation in erlang-calculate-stack-indent. If it
-	     ;; was an ordinary catch without try, these entries will
-	     ;; be popped of the stack at a later ocaccion.
-	     (erlang-push (list 'icr token (current-column)) stack)
-	     (erlang-push (list '-> token (current-column)) stack))
-	    ((looking-at "catch[^,\n\\of]*\n")
-	     (erlang-push (list 'icr token (current-column)) stack)
-	     (erlang-push (list '-> token (current-column)) stack))
+	    ;;(erlang-push (list '-> token (current-column)) stack))
 	    ;;((looking-at "^of$") 
 	    ;; (erlang-push (list 'icr token (current-column)) stack)
-	     ;;(erlang-push (list '-> token (current-column)) stack))
+	    ;;(erlang-push (list '-> token (current-column)) stack))
 	    )
       (forward-sexp 1))
       ;; String: Try to skip over it. (Catch error if not complete.)
@@ -3167,57 +3792,49 @@ Value is list (stack token-start token-type in-what)."
        
        ;; Clause end
        ((= (following-char) ?\;)
+	(if (and stack (and (eq (car (car stack)) 'when) 
+			    (eq (car (car (cdr (cdr stack)))) 'spec)))
+	    (erlang-pop stack))
 	(if (and stack (eq (car (car stack)) '->))
 	    (erlang-pop stack))
 	(forward-char 1))
        
+       ;; Parameter separator
+       ((looking-at ",")
+	(forward-char 1)
+	(if (and stack (eq (car (car stack)) '::))
+	    ;; Type or spec
+	    (erlang-pop stack)))
+
        ;; Function end
        ((looking-at "\\.\\(\\s \\|\n\\|\\s<\\)")
 	(setq stack nil)
 	(forward-char 1))
        
        ;; Function head
-       ((looking-at "->\\|:-")
-	(save-excursion
-	  (back-to-indentation)
-	  (cond ((looking-at "after[^_a-zA-Z0-9]")
-		 (erlang-pop stack))))	
+       ((looking-at "->")
 	(if (and stack (eq (car (car stack)) 'when))
 	    (erlang-pop stack))
 	(erlang-push (list '-> token (current-column)) stack)
-	(forward-char 2))
+	(forward-char 2)) 
        
        ;; List-comprehension divider
        ((looking-at "||")
 	(erlang-push (list '|| token (current-column)) stack)
 	(forward-char 2))
 
-       ;;((looking-at ",$") 
-	;; Normal catch not try-catch have caused icr
-	;; and then incr and faked "->" should be removed
-;;	(save-excursion
-	;;  (back-to-indentation)
-	 ;; (cond ((looking-at "catch[^_a-zA-Z0-9]")
-		;; (erlang-pop stack)
-		;; (erlang-pop stack))))
-	;;(forward-char 1))
-
-       ;; Parameter separator
-       ((looking-at ",")
-	(forward-char 1))
-       
        ;; Bit-syntax open paren
        ((looking-at "<<")
-	(erlang-push (list '\( token (current-column)) stack)
+	(erlang-push (list '<< token (current-column)) stack)
 	(forward-char 2))
        
        ;; Bbit-syntax close paren
        ((looking-at ">>")
 	(while (memq (car (car stack)) '(|| ->))
 	  (erlang-pop stack))
-	(cond ((eq (car (car stack)) '\()
+	(cond ((eq (car (car stack)) '<<)
 	       (erlang-pop stack))
-	      ((memq (car (car stack)) '(icr begin)) 
+	      ((memq (car (car stack)) '(icr begin fun)) 
 	       (error "Missing `end'"))
 	      (t
 	       (error "Unbalanced parentheses")))
@@ -3228,6 +3845,30 @@ Value is list (stack token-start token-type in-what)."
 	;; Skip over the ? 
 	(forward-char 1)
 	)
+
+       ;; Type spec's
+       ((looking-at "-type\\s \\|-opaque\\s ")
+	(if stack
+	    (forward-char 1)
+	  (erlang-push (list 'icr token (current-column)) stack)
+	  (forward-char 6)))
+       ((looking-at "-spec\\s ")
+	(if stack
+	    (forward-char 1)
+	  (forward-char 6) 
+	  (skip-chars-forward "^(\n")
+	  (erlang-push (list 'spec (point) (current-column)) stack)
+	  ))
+
+       ;; Type spec delimiter
+       ((looking-at "::")
+	(erlang-push (list ':: token (current-column)) stack)
+	(forward-char 2))
+       
+       ;; Don't follow through in the clause below 
+       ;; '|' don't need spaces around it 
+       ((looking-at "|")
+	(forward-char 1))
        
        ;; Other punctuation: Skip over it and any following punctuation
        ((= cs ?.)
@@ -3245,26 +3886,29 @@ Value is list (stack token-start token-type in-what)."
      
      ;; Close parenthesis
      ((= cs ?\))
-      (while (memq (car (car stack)) '(|| ->))
+      (while (memq (car (car stack)) '(|| -> :: when))
 	(erlang-pop stack))
       (cond ((eq (car (car stack)) '\()
-	     (erlang-pop stack))
+	     (erlang-pop stack)
+	     (if (and (eq (car (car stack)) 'fun) 
+		      (eq (car (car (cdr stack))) '::))
+		 ;; Inside fun type def ') closes fun definition
+		 (erlang-pop stack)))
 	    ((eq (car (car stack)) 'icr)
 	     (erlang-pop stack)  
 	     ;; Normal catch not try-catch might have caused icr
 	     ;; and then incr should be removed and is not an error.
 	     (if (eq (car (car stack)) '\() 
 	     	 (erlang-pop stack) 
-	     (else
-	       (error "Missing `end'"))
-	     ))
+	       (error "Missing `end'")
+	       ))
 	    ((eq (car (car stack)) 'begin) 
-	     (error "Missing `end'") 
-	     (t
-	      (error "Unbalanced parenthesis"))
-	     ))
-      (forward-char 1))
-     
+	     (error "Missing `end'"))
+	    (t
+	     (error "Unbalanced parenthesis"))
+	    )
+      (forward-char 1)) 
+    
      ;; Character quote: Skip it and the quoted char.
      ((= cs ?/)
       (forward-char 2))
@@ -3273,7 +3917,7 @@ Value is list (stack token-start token-type in-what)."
      ((= cs ?\\)
       (forward-char 1)
       (skip-syntax-forward "w"))
-     
+
      ;; Everything else
      (t
       (forward-char 1)))
@@ -3283,132 +3927,198 @@ Value is list (stack token-start token-type in-what)."
   "From the given last position and state (stack) calculate indentation.
 Return nil if inside string, t if in a comment."
   (let* ((stack (and state (car state)))
-	 (token (nth 1 state))
-	 (stack-top (and stack (car stack))))
-    (cond ((null state)			;No state
-	   0)
-	  ((nth 3 state)
-	   ;; Return nil or t.
-	   (eq (nth 3 state) 'comment))
-	  ((null stack)
-	   (if (looking-at "when[^_a-zA-Z0-9]")
-	       erlang-indent-guard
-	     0))
-	  ((eq (car stack-top) '\()
-	   ;; Element of list, tuple or part of an expression,
-	   (if (null erlang-argument-indent)
-	       ;; indent to next column.
-	       (1+ (nth 2 stack-top))
+         (token (nth 1 state))
+         (stack-top (and stack (car stack))))
+    (cond ((null state)                 ;No state
+           0)
+          ((nth 3 state)
+           ;; Return nil or t.
+           (eq (nth 3 state) 'comment))
+          ((null stack)
+           (if (looking-at "when[^_a-zA-Z0-9]")
+               erlang-indent-guard
+             0))
+          ((eq (car stack-top) '\()
+           ;; Element of list, tuple or part of an expression,
+           (cond ((null erlang-argument-indent)
+		  ;; indent to next column.
+		  (1+ (nth 2 stack-top)))
+		 ((= (char-syntax (following-char)) ?\))
+		  (goto-char (nth 1 stack-top))
+		  (cond ((looking-at "[({]\\s *\\($\\|%\\)")
+		   	 ;; Line ends with parenthesis.
+			 (let ((previous (erlang-indent-find-preceding-expr))
+			       (stack-pos (nth 2 stack-top)))
+			   (if (>= previous stack-pos) stack-pos
+			     (- (+ previous erlang-argument-indent) 1))))
+		   	(t
+		   	 (nth 2 stack-top))))
+		 (t 
+		  (goto-char (nth 1 stack-top))
+		  (cond ((looking-at "[({]\\s *\\($\\|%\\)")
+			 ;; Line ends with parenthesis.
+			 (erlang-indent-parenthesis (nth 2 stack-top)))
+			(t
+			 ;; Indent to the same column as the first
+			 ;; argument.
+			 (goto-char (1+ (nth 1 stack-top)))
+			 (skip-chars-forward " \t")
+			 (current-column))))))
+	  ;;
+	  ((eq (car stack-top) '<<)
+	   ;; Element of binary (possible comprehension) expression,
+	   (cond ((null erlang-argument-indent)
+		  ;; indent to next column.
+		  (+ 2 (nth 2 stack-top)))
+		 ((looking-at "\\(>>\\)[^_a-zA-Z0-9]")
+		  (nth 2 stack-top))
+		 (t 
+		  (goto-char (nth 1 stack-top))
+		  ;; Indent to the same column as the first
+		  ;; argument.
+		  (goto-char (+ 2 (nth 1 stack-top)))
+		  (skip-chars-forward " \t")
+		  (current-column))))
+	  
+          ((memq (car stack-top) '(icr fun spec))
+           ;; The default indentation is the column of the option
+           ;; directly following the keyword. (This does not apply to
+           ;; `case'.)  Should no option be on the same line, the
+           ;; indentation is the indentation of the keyword +
+           ;; `erlang-indent-level'.
+           ;;
+           ;; `after' should be indented to the same level as the
+           ;; corresponding receive.
+           (cond ((looking-at "\\(after\\|catch\\|of\\)\\($\\|[^_a-zA-Z0-9]\\)")
+		  (nth 2 stack-top))
+		 ((looking-at "when[^_a-zA-Z0-9]")
+		  ;; Handling one when part
+		  (+ (nth 2 stack-top) erlang-indent-level erlang-indent-guard))
+		 (t
+		  (save-excursion
+		    (goto-char (nth 1 stack-top))
+		    (if (looking-at "case[^_a-zA-Z0-9]")
+			(+ (nth 2 stack-top) erlang-indent-level)
+		      (skip-chars-forward "a-z")
+		      (skip-chars-forward " \t")
+		      (if (memq (following-char) '(?% ?\n))
+			  (+ (nth 2 stack-top) erlang-indent-level)
+			(current-column))))))
+           )
+	  ((and (eq (car stack-top) '||) (looking-at "\\(]\\|>>\\)[^_a-zA-Z0-9]"))
+	   (nth 2 (car (cdr stack))))
+          ;; Real indentation, where operators create extra indentation etc.
+          ((memq (car stack-top) '(-> || begin try))
+	   (if (looking-at "\\(of\\)[^_a-zA-Z0-9]")
+	       (nth 2 stack-top)
 	     (goto-char (nth 1 stack-top))
-	     (cond ((looking-at "[({]\\s *\\($\\|%\\)")
-		    ;; Line ends with parenthesis.
-		    (+ (erlang-indent-find-preceding-expr)
-		       erlang-argument-indent))
-		   (t
-		    ;; Indent to the same column as the first
-		    ;; argument.
-		    (goto-char (1+ (nth 1 stack-top)))
-		    (skip-chars-forward " \t")
-		    (current-column)))))
-	  ((eq (car stack-top) 'icr)
-	   ;; The default indentation is the column of the option
-	   ;; directly following the keyword. (This does not apply to
-	   ;; `case'.)  Should no option be on the same line, the
-	   ;; indentation is the indentation of the keyword +
-	   ;; `erlang-indent-level'.
-	   ;;
-	   ;; `after' should be indented to the save level as the
-	   ;; corresponding receive.
-	   (if (looking-at "after[^_a-zA-Z0-9]")
-	       (nth 2 stack-top)
-	     (save-excursion
-	       (goto-char (nth 1 stack-top))
-	       (if (looking-at "case[^_a-zA-Z0-9]")
-		   (+ (nth 2 stack-top) erlang-indent-level)
-		 (skip-chars-forward "a-z")
-		 (skip-chars-forward " \t")
-		 (if (memq (following-char) '(?% ?\n))
-		     (+ (nth 2 stack-top) erlang-indent-level)
-		   (current-column)))))
-	   (if (looking-at "catch[^_a-zA-Z0-9]")
-	       (nth 2 stack-top)
-	     (save-excursion
-	       (goto-char (nth 1 stack-top))
-	       (if (looking-at "case[^_a-zA-Z0-9]")
-		   (+ (nth 2 stack-top) erlang-indent-level)
-		 (skip-chars-forward "a-z")
-		 (skip-chars-forward " \t")
-		 (if (memq (following-char) '(?% ?\n))
-		     (+ (nth 2 stack-top) erlang-indent-level)
-		   (current-column)))))
-	   )
-	  ;; Real indentation, where operators create extra indentation etc.
-	  ((memq (car stack-top) '(-> || begin))
-	   (goto-char (nth 1 stack-top))
-	   ;; Check if there is more code after the '->' on the
-	   ;; same line. If so use this indentation as base, else
-	   ;; use parent indentation + 2 * level as base.
-	   (let ((off erlang-indent-level)
-		 (skip 2))
-	     (cond ((null (cdr stack)))	; Top level in function.
-		   ((eq (car stack-top) 'begin)
-		    (setq skip 5))
-		   ((eq (car stack-top) '->)
-		    (setq off (* 2 erlang-indent-level))))
-	     (let ((base (erlang-indent-find-base stack indent-point off skip)))
-	       ;; Look at last thing to see how we are to move relative
-	       ;; to the base.
-	       (goto-char token)
-	       (cond ((looking-at "||\\|,\\|->\\|:-")
-		      base)
-		     ((erlang-at-keyword)
-		      (+ (current-column) erlang-indent-level))
-		     ((or (= (char-syntax (following-char)) ?.)
-			  (erlang-at-operator))
-		      (+ base erlang-indent-level))
-		     (t
-		      (goto-char indent-point)
-		      (cond ((memq (following-char) '(?\( ?{))
-			     ;; Function application or record.
-			     (+ (erlang-indent-find-preceding-expr)
-				erlang-argument-indent))
-			    ;; Empty line, or end; treat it as the end of
-			    ;; the block.  (Here we have a choice: should
-			    ;; the user be forced to reindent continued
-			    ;; lines, or should the "end" be reindented?)
-			    ((looking-at "\\(end\\|after\\|catch\\)[^_a-zA-Z0-9]\\|$")
-			     (if (eq (car (car stack)) '->)
-				 (erlang-pop stack))
-			     (if stack
-				 (erlang-caddr (car stack))
-			       0))
-			    ;; Avoid treating comments a continued line.
-			    ((= (following-char) ?%)
-			     base)
-			    ;; Continued line (e.g. line beginning
-			    ;; with an operator.)
-			    (t (+ base erlang-indent-level)))))))
-	   )
+	     ;; Check if there is more code after the '->' on the
+	     ;; same line. If so use this indentation as base, else
+	     ;; use parent indentation + 2 * level as base.
+	     (let ((off erlang-indent-level)
+		   (skip 2))
+	       (cond ((null (cdr stack))) ; Top level in function.
+		     ((eq (car stack-top) 'begin)
+		      (setq skip 5))
+		     ((eq (car stack-top) 'try)
+		      (setq skip 5))
+		     ((eq (car stack-top) '->)
+		      ;; If in fun definition use standard indent level not double
+		      ;;(if (not (eq (car (car (cdr stack))) 'fun))
+		      ;; Removed it made multi clause fun's look to bad
+		      (setq off (* 2 erlang-indent-level)))) ;; ) 
+	       (let ((base (erlang-indent-find-base stack indent-point off skip)))
+		 ;; Special cases
+		 (goto-char indent-point)
+		 (cond ((looking-at "\\(end\\|after\\)\\($\\|[^_a-zA-Z0-9]\\)")
+			(if (eq (car stack-top) '->)
+			    (erlang-pop stack))
+			(if stack
+			    (erlang-caddr (car stack))
+			  0))
+		       ((looking-at "catch\\($\\|[^_a-zA-Z0-9]\\)")
+			(if (or (eq (car stack-top) 'try)
+				(eq (car (car (cdr stack))) 'icr))
+			    (progn 
+			      (if (eq (car stack-top) '->)
+				  (erlang-pop stack))
+			      (if stack
+				  (erlang-caddr (car stack))
+				0))
+			  base)) ;; old catch 
+		       (t 
+			;; Look at last thing to see how we are to move relative
+			;; to the base.
+			(goto-char token)
+			(cond ((looking-at "||\\|,\\|->")
+			       base)
+			      ((erlang-at-keyword)
+			       (+ (current-column) erlang-indent-level))
+			      ((or (= (char-syntax (following-char)) ?.)
+				   (erlang-at-operator))
+			       (+ base erlang-indent-level))
+			      (t
+			       (goto-char indent-point)
+			       (cond ((memq (following-char) '(?\( ?{))
+				      ;; Function application or record.
+				      (+ (erlang-indent-find-preceding-expr)
+					 erlang-argument-indent))
+				     ;; Empty line, or end; treat it as the end of
+				     ;; the block.  (Here we have a choice: should
+				     ;; the user be forced to reindent continued
+				     ;; lines, or should the "end" be reindented?)
+				     
+				     ;; Avoid treating comments a continued line.
+				     ((= (following-char) ?%)
+				      base)
+				     ;; Continued line (e.g. line beginning
+				     ;; with an operator.)
+				     (t (+ base erlang-indent-level)))))))))
+	       ))
 	  ((eq (car stack-top) 'when)
 	   (goto-char (nth 1 stack-top))
 	   (if (looking-at "when\\s *\\($\\|%\\)")
 	       (progn
 		 (erlang-pop stack)
-		 (if (and stack (eq (nth 0 (car stack)) 'icr))
+		 (if (and stack (memq (nth 0 (car stack)) '(icr fun)))
 		     (progn
 		       (goto-char (nth 1 (car stack)))
 		       (+ (nth 2 (car stack)) erlang-indent-guard
 			  ;; receive XYZ    or    receive
 			  ;;                          XYZ
-			  (if (looking-at "[a-z]+\\s *\\($\\|%\\)")
-			      erlang-indent-level
-			    (* 2 erlang-indent-level))))
-		   erlang-indent-guard))
-	     ;; "when" is followed by code, let's indent to the same
-	     ;; column.
-	     (forward-char 4)		; Skip "when"
-	     (skip-chars-forward " \t")
-	     (current-column))))))
+			  ;; This if thing does not seem to be needed
+			  ;;(if (looking-at "[a-z]+\\s *\\($\\|%\\)")
+			  ;;    erlang-indent-level
+			  ;;  (* 2 erlang-indent-level))))
+			  (* 2 erlang-indent-level)))
+			  ;;erlang-indent-level))
+		   (+ erlang-indent-level erlang-indent-guard)))
+             ;; "when" is followed by code, let's indent to the same
+             ;; column.
+             (forward-char 4)           ; Skip "when"
+             (skip-chars-forward " \t")
+             (current-column)))
+	  ;; Type and Spec indentation
+	  ((eq (car stack-top) '::)
+	   (cond ((null erlang-argument-indent)
+		  ;; indent to next column.
+		  (+ 2 (nth 2 stack-top)))
+		 ((looking-at "::[^_a-zA-Z0-9]")
+		  (nth 2 stack-top))
+		 (t 
+		  (goto-char (nth 1 stack-top))
+		  (cond ((looking-at "::\\s *\\($\\|%\\)")
+			 ;; Line ends with ::
+			 (+ (erlang-indent-find-preceding-expr 2)
+			    erlang-argument-indent))
+			;; (* 2 erlang-indent-level))
+			(t
+			 ;; Indent to the same column as the first
+			 ;; argument.
+			 (goto-char (+ 2 (nth 1 stack-top)))
+			 (skip-chars-forward " \t")
+			 (current-column))))))
+	  )))
 
 
 (defun erlang-indent-find-base (stack indent-point &optional offset skip)
@@ -3418,28 +4128,32 @@ Return nil if inside string, t if in a comment."
   (save-excursion
     (let* ((stack-top (car stack)))
       (goto-char (nth 1 stack-top))
-      (forward-char skip)
-      (if (looking-at "\\s *\\($\\|%\\)")
-	  (progn
-	    (if (memq (car stack-top) '(-> ||))
-		(erlang-pop stack))
-	    ;; Take parent identation + offset,
-	    ;; else just erlang-indent-level if no parent
-	    (if stack
-		(+ (erlang-caddr (car stack))
-		   offset)
-	      erlang-indent-level))
-	(erlang-skip-blank indent-point)
-	(current-column)))))
+      (if (< skip (- (point-max) (point)))
+	  (progn 
+	    (forward-char skip)
+	    (if (looking-at "\\s *\\($\\|%\\)")
+		(progn
+		  (if (memq (car stack-top) '(-> ||))
+		      (erlang-pop stack))
+		  ;; Take parent identation + offset,
+		  ;; else just erlang-indent-level if no parent
+		  (if stack
+		      (+ (erlang-caddr (car stack))
+			 offset)
+		    erlang-indent-level))
+	      (erlang-skip-blank indent-point)
+	      (current-column)))
+	(+ (current-column) skip)))))
 
 
 ;; Does not handle `begin' .. `end'.
-(defun erlang-indent-find-preceding-expr ()
+(defun erlang-indent-find-preceding-expr (&optional arg)
   "Return the first column of the preceding expression.
 This assumes that the preceding expression is either simple
 \(i.e. an atom) or parenthesized."
   (save-excursion
-    (forward-sexp -1)
+    (or arg (setq arg 1))
+    (forward-sexp (- arg))
     (let ((col (current-column)))
       (skip-chars-backward " \t")
       ;; Needed to match the colon in "'foo':'bar'".
@@ -3449,6 +4163,11 @@ This assumes that the preceding expression is either simple
 	(forward-sexp -1)
 	(current-column)))))
 
+(defun erlang-indent-parenthesis (stack-position) 
+  (let ((previous (erlang-indent-find-preceding-expr)))
+    (if (> previous stack-position)
+	(+ stack-position erlang-argument-indent)
+      (+ previous erlang-argument-indent))))
 
 (defun erlang-skip-blank (&optional lim)
   "Skip over whitespace and comments until limit reached."
@@ -3469,7 +4188,7 @@ This assumes that the preceding expression is either simple
 (defun erlang-at-keyword ()
   "Are we looking at an Erlang keyword which will increase indentation?"
   (looking-at (concat "\\(when\\|if\\|fun\\|case\\|begin\\|query\\|"
-		      "of\\|receive\\|after\\|catch\\)[^_a-zA-Z0-9]")))
+		      "of\\|receive\\|after\\|catch\\|try\\)[^_a-zA-Z0-9]")))
 
 (defun erlang-at-operator ()
   "Are we looking at an Erlang operator?"
@@ -3524,7 +4243,7 @@ Return t unless search stops due to end of buffer."
 	    (forward-char 1))))
   ;; The regexp matches a function header that isn't
   ;; included in a string.
-  (and (re-search-forward "\\(\\`\\|\\`\n\\|[^\\]\n\\)\\([a-z]\\|'\\|-\\)"
+  (and (re-search-forward "\\(\\`\\|\\`\n\\|[^\\]\n\\)\\(-?[a-z]\\|'\\|-\\)"
 			  nil 'move (- arg))
        (let ((beg (match-beginning 2)))
 	 (and beg (goto-char beg))
@@ -3757,7 +4476,7 @@ and initial `%':s."
 (defun erlang-uncomment-region (beg end)
   "Uncomment all commented lines in the region."
   (interactive "r")
-  (comment-region beg end -1))
+  (uncomment-region beg end))
 
 
 (defun erlang-generate-new-clause ()
@@ -3887,7 +4606,7 @@ corresponds to the order of the parsed Erlang list."
 			       (erlang-remove-quotes
 				(erlang-buffer-substring
 				 (match-beginning 1) (match-end 1)))
-			       (string-to-int
+			       (erlang-string-to-int
 				(erlang-buffer-substring
 				 (match-beginning
 				  (+ 1 erlang-atom-regexp-matches))
@@ -3972,9 +4691,7 @@ Normally used in conjunction with `erlang-beginning-of-clause', e.g.:
 
 
 (defun erlang-get-function-arrow ()
-  "Return arrow of current function, could be \"->\", \":-\" or nil.
-
-The \":-\" arrow is used by mnesia queries.
+  "Return arrow of current function, could be \"->\" or nil.
 
 Normally used in conjunction with `erlang-beginning-of-clause', e.g.:
               (save-excursion
@@ -4074,13 +4791,14 @@ In the future the list may contain more elements."
 ;; replace-regexp-in-string.
 (defun erlang-add-quotes-if-needed (str)
   "Return STR, possibly with quotes."
-  (if (and (stringp str)
-	   (not (string-match (eval-when-compile
-				(concat "\\`" erlang-atom-regexp "\\'")) str)))
-      (progn (if (fboundp 'replace-regexp-in-string)
-		 (setq str (replace-regexp-in-string "'" "\\'" str t t )))
-	     (concat "'" str "'"))
-    str))
+  (let ((case-fold-search nil)) ; force string matching to be case sensitive
+    (if (and (stringp str)
+	     (not (string-match (eval-when-compile
+				  (concat "\\`" erlang-atom-regexp "\\'")) str)))
+	(progn (if (fboundp 'replace-regexp-in-string)
+		   (setq str (replace-regexp-in-string "'" "\\'" str t t )))
+	       (concat "'" str "'"))
+      str)))
 
 
 (defun erlang-remove-quotes (str)
@@ -4128,8 +4846,10 @@ is prompted.
 
 This function is normally placed in the hook `local-write-file-hooks'."
   (if erlang-check-module-name
-      (let ((mn (erlang-get-module))
-	    (fn (erlang-get-module-from-file-name (buffer-file-name))))
+      (let ((mn (erlang-add-quotes-if-needed 
+		 (erlang-get-module)))
+	    (fn (erlang-add-quotes-if-needed 
+		 (erlang-get-module-from-file-name (buffer-file-name)))))
 	(if (and (stringp mn) (stringp fn))
 	    (or (string-equal mn fn)
 		(if (or (eq erlang-check-module-name t)
@@ -4440,7 +5160,7 @@ context, nil is returned."
 			  (erlang-beginning-of-clause)
 			  (point))))
 	   (state (if (fboundp 'syntax-ppss) ; post Emacs 21.3
-		      (syntax-ppss)
+		      (funcall (symbol-function 'syntax-ppss))
 		    (parse-partial-sexp lim (point)))))
       (cond
        ((eq (nth 3 state) ?') 'atom)
@@ -4456,6 +5176,15 @@ This function is designed to be a member of a criteria list."
   (eq (save-excursion (erlang-skip-blank) (point))
       (save-excursion
 	(erlang-beginning-of-function -1) (point))))
+
+
+(defun erlang-at-end-of-clause-p ()
+  "Test if point is at end of an Erlang clause.
+
+This function is designed to be a member of a criteria list."
+  (eq (save-excursion (erlang-skip-blank) (point))
+      (save-excursion
+	(erlang-beginning-of-clause -1) (point))))
 
 
 (defun erlang-stop-when-inside-argument-list ()
@@ -4493,7 +5222,7 @@ This function is designed to be a member of a criteria list."
 			   (concat "^" erlang-atom-regexp "\\s *(")))
 	     (not (looking-at
 		   (eval-when-compile
-		     (concat "^" erlang-atom-regexp ".*\\(->\\|:-\\)")))))
+		     (concat "^" erlang-atom-regexp ".*->")))))
 	'stop
       nil)))
 
@@ -4849,22 +5578,22 @@ Tags can be given on the forms `tag', `module:', `module:tag'."
   ;; Make sure our functions are installed in TAGS files loaded
   ;; into Emacs while searching.
   (cond
-   (( >= erlang-emacs-major-version 20)
+   ((>= erlang-emacs-major-version 20)
     (setq erlang-tags-orig-format-functions
-	  (symbol-value 'tags-table-format-functions))
+          (symbol-value 'tags-table-format-functions))
     (funcall (symbol-function 'set) 'tags-table-format-functions
-	     (cons 'erlang-tags-recognize-tags-table
-		   erlang-tags-orig-format-functions))
+             (cons 'erlang-tags-recognize-tags-table
+                   erlang-tags-orig-format-functions))
     (setq erlang-tags-buffer-list '())
     )
    (t
     (setq erlang-tags-orig-format-hooks
-	  (symbol-value 'tags-table-format-hooks)))
-   (funcall (symbol-function 'set) 'tags-table-format-hooks
-	    (cons 'erlang-tags-recognize-tags-table
-		  erlang-tags-orig-format-hooks))
-   (setq erlang-tags-buffer-list '())
-   )
+          (symbol-value 'tags-table-format-hooks))
+    (funcall (symbol-function 'set) 'tags-table-format-hooks
+	     (cons 'erlang-tags-recognize-tags-table
+		   erlang-tags-orig-format-hooks))
+    (setq erlang-tags-buffer-list '())
+   ))
    
   ;; Install our functions in the TAGS files already resident.
   (save-excursion
@@ -5154,6 +5883,9 @@ Erlang compilation package.")
 Change this variable to use your favorite
 Erlang compilation package.")
 
+(defvar erlang-compile-erlang-function "c"
+  "Erlang function to call to compile an erlang file.")
+
 (defvar erlang-compile-display-function 'inferior-erlang-run-or-select
   "Command to execute to view last compilation.
 
@@ -5223,11 +5955,6 @@ future, a new shell on an already running host will be started."
 (defvar erlang-shell-buffer-name "*erlang*"
   "The name of the Erlang link shell buffer.")
 
-;;(when (boundp 'same-window-buffer-names)
- ;; (unless (member "*Python*" same-window-buffer-names)
-   ;; (push "*Python*" same-window-buffer-names)))
-
-
 (defvar erlang-shell-mode-map nil
   "Keymap used by Erlang shells.")
 
@@ -5288,12 +6015,13 @@ The following special commands are available:
   ;; the call fails, just call the normal `add-hook'.
   (condition-case nil
       (progn
-	(make-local-hook 'comint-output-filter-functions) ; obsolete after Emacs 21.3
-	(add-hook 'comint-output-filter-functions
-		 'inferior-erlang-strip-delete nil t)
-	(add-hook 'comint-output-filter-functions
-		 'inferior-erlang-strip-ctrl-m nil t))
+        (add-hook 'comint-output-filter-functions
+		  'inferior-erlang-strip-delete nil t)
+        (add-hook 'comint-output-filter-functions
+		  'inferior-erlang-strip-ctrl-m nil t))
     (error
+     (funcall (symbol-function 'make-local-hook)
+	      'comint-output-filter-functions) ; obsolete as of Emacs 21.1
      (add-hook 'comint-output-filter-functions 'inferior-erlang-strip-delete)
      (add-hook 'comint-output-filter-functions 'inferior-erlang-strip-ctrl-m)))
   ;; Some older versions of comint don't have an input ring.
@@ -5425,8 +6153,13 @@ editing control characters:
 		 nil opts)))
   (setq inferior-erlang-process
 	(get-buffer-process inferior-erlang-buffer))
-  (process-kill-without-query inferior-erlang-process)
-  (switch-to-buffer inferior-erlang-buffer)
+  (if (> 21 erlang-emacs-major-version)	; funcalls to avoid compiler warnings
+      (funcall (symbol-function 'set-process-query-on-exit-flag) 
+	       inferior-erlang-process nil)
+    (funcall (symbol-function 'process-kill-without-query) inferior-erlang-process))
+  (if erlang-inferior-shell-split-window
+      (switch-to-buffer-other-window inferior-erlang-buffer)
+    (switch-to-buffer inferior-erlang-buffer)) 
   (if (and (not (eq system-type 'windows-nt))
 	   (eq inferior-erlang-shell-type 'newshell))
       (setq comint-process-echoes t))
@@ -5522,6 +6255,21 @@ frame will become deselected before the next command."
 	      (error "No Erlang shell prompt before timeout")))
 	(if msg (message ""))))))
 
+(defun inferior-erlang-send-empty-cmd-unless-already-at-prompt ()
+  "If not already at a prompt, try to send an empty cmd to get a prompt.
+The empty command resembles hitting RET. This is useful in some
+situations, for instance if a crash or error report from sasl
+has been printed after the last prompt."
+  (save-excursion
+    (set-buffer inferior-erlang-buffer)
+    (if (> (point-max) 1)
+	;; make sure we get a prompt if buffer contains data
+	(if (save-excursion
+	      (goto-char (process-mark inferior-erlang-process))
+	      (forward-line 0)
+	      (not (looking-at comint-prompt-regexp)))
+	    (inferior-erlang-send-command "")))))
+
 (autoload 'comint-send-input "comint")
 
 (defun inferior-erlang-send-command (cmd &optional hist)
@@ -5554,7 +6302,10 @@ Return the position after the newly inserted command."
     ;; has been sorted out in Emacs 21.  -- fx
     (let ((comint-eol-on-send nil)
 	  (comint-input-filter (if hist comint-input-filter 'ignore)))
-      (comint-send-input))
+      (if (and (not erlang-xemacs-p)
+	       (>= emacs-major-version 22))
+	  (comint-send-input nil t)
+	(comint-send-input)))
     ;; Adjust all windows whose points are incorrect.
     (if (null comint-process-echoes)
 	(walk-windows
@@ -5620,36 +6371,22 @@ There exists two workarounds for this bug:
         (setq erlang-compile-use-outdir nil)"
   (interactive "P")
   (save-some-buffers)
-  (or (inferior-erlang-running-p)
-      (save-excursion
-	(inferior-erlang)))
-  (or (inferior-erlang-running-p)
-      (error "Error starting inferior Erlang shell"))
-  (let ((dir (file-name-directory (buffer-file-name)))
+  (inferior-erlang-prepare-for-input)
+  (let* ((dir (inferior-erlang-compile-outdir))
 ;;; (file (file-name-nondirectory (buffer-file-name)))
-	(noext (substring (buffer-file-name) 0 -4))
-	;; Hopefully, noone else will ever use these...
-	(tmpvar "Tmp7236")
-	(tmpvar2 "Tmp8742")
-	end)
-    (inferior-erlang-display-buffer)
-    (inferior-erlang-wait-prompt)
+	 (noext (substring (buffer-file-name) 0 -4))
+	 (opts (append (list (cons 'outdir dir))
+		       (if current-prefix-arg
+			   (list 'debug_info 'export_all))
+		       erlang-compile-extra-opts))
+	 end)
+    (save-excursion
+      (set-buffer inferior-erlang-buffer)
+      (compilation-forget-errors))
     (setq end (inferior-erlang-send-command
-	       (if erlang-compile-use-outdir
-		   (if current-prefix-arg 
-		       (format "c(\"%s\", [{outdir, \"%s\"}, debug_info, export_all])." noext dir)
-		     (format "c(\"%s\", [{outdir, \"%s\"}])." noext dir))
-		 (format
-		  (concat
-		   "f(%s), {ok, %s} = file:get_cwd(), "
-		   "file:set_cwd(\"%s\"), "
-		   (if current-prefix-arg 
-		       "%s = c(\"%s\", [debug_info, export_all]), file:set_cwd(%s), f(%s), %s."
-		     "%s = c(\"%s\"), file:set_cwd(%s), f(%s), %s."))
-		  tmpvar2 tmpvar
-		  dir
-		  tmpvar2 noext tmpvar tmpvar tmpvar2))
+	       (inferior-erlang-compute-compile-command noext opts)
 	       nil))
+    (sit-for 0)
     (inferior-erlang-wait-prompt)
     (save-excursion
       (set-buffer inferior-erlang-buffer)
@@ -5657,6 +6394,89 @@ There exists two workarounds for this bug:
       (set-marker compilation-parsing-end end))
     (setq compilation-last-buffer inferior-erlang-buffer)))
 
+(defun inferior-erlang-prepare-for-input (&optional no-display)
+  "Create an inferior erlang buffer if needed and ready it for input.
+The buffer is displayed, according to `inferior-erlang-display-buffer'
+unless the optional NO-DISPLAY is non-nil."
+  (or (inferior-erlang-running-p)
+      (save-excursion
+	(inferior-erlang)))
+  (or (inferior-erlang-running-p)
+      (error "Error starting inferior Erlang shell"))
+  (if (not no-display)
+      (inferior-erlang-display-buffer))
+  (inferior-erlang-send-empty-cmd-unless-already-at-prompt)
+  (sit-for 0)
+  (inferior-erlang-wait-prompt))
+
+(defun inferior-erlang-compile-outdir ()
+  "Return the directory to compile the current buffer into."
+  (let* ((buffer-dir (directory-file-name
+		      (file-name-directory (buffer-file-name))))
+	 (parent-dir (directory-file-name
+		      (file-name-directory buffer-dir)))
+         (ebin-dir (concat (file-name-as-directory parent-dir) "ebin"))
+	 (buffer-dir-base-name (file-name-nondirectory 
+				(expand-file-name
+				 (concat (file-name-as-directory buffer-dir)
+					 ".")))))
+    (if (and (string= buffer-dir-base-name "src")
+	     (file-directory-p ebin-dir))
+	(file-name-as-directory ebin-dir)
+      (file-name-as-directory buffer-dir))))
+
+(defun inferior-erlang-compute-compile-command (module-name opts)
+  (let* ((out-dir-opt (assoc 'outdir opts))
+	 (out-dir     (cdr out-dir-opt)))
+    (if erlang-compile-use-outdir
+	(format "%s(\"%s\"%s)."
+		erlang-compile-erlang-function
+		module-name
+		(inferior-erlang-format-comma-opts opts))
+      (let (;; Hopefully, noone else will ever use these...
+	    (tmpvar "Tmp7236")
+	    (tmpvar2 "Tmp8742"))
+	(format
+	 (concat
+	  "f(%s), {ok, %s} = file:get_cwd(), "
+	  "file:set_cwd(\"%s\"), "
+	  "%s = %s(\"%s\"%s), file:set_cwd(%s), f(%s), %s.")
+	 tmpvar2 tmpvar
+	 out-dir
+	 tmpvar2
+	 erlang-compile-erlang-function
+	 module-name (inferior-erlang-format-comma-opts
+		      (remq out-dir-opt opts))
+	 tmpvar tmpvar tmpvar2)))))
+
+(defun inferior-erlang-format-comma-opts (opts)
+  (if (null opts)
+      ""
+    (concat ", " (inferior-erlang-format-opts opts))))
+
+(defun inferior-erlang-format-opts (opts)
+  (concat "[" (inferior-erlang-string-join (mapcar 'inferior-erlang-format-opt
+						   opts)
+					   ", ")
+	  "]"))
+
+(defun inferior-erlang-format-opt (opt)
+  (cond ((stringp opt) (concat "\"" opt "\""))
+	((atom opt)    (format "%s" opt))
+	((consp opt)   (concat "{" (inferior-erlang-string-join
+				    (mapcar 'inferior-erlang-format-opt
+					    (list (car opt) (cdr opt)))
+				    ", ")
+			       "}"))
+	(t (error (format "Unexpected opt %s" opt)))))
+
+(defun inferior-erlang-string-join (strs sep)
+  (let ((result (or (car strs) "")))
+    (setq strs (cdr strs))
+    (while strs
+      (setq result (concat result sep (car strs)))
+      (setq strs (cdr strs)))
+    result))
 
 ;; `next-error' only accepts buffers with major mode `compilation-mode'
 ;; or with the minor mode `compilation-minor-mode' activated.
@@ -5668,8 +6488,10 @@ There exists two workarounds for this bug:
 Capable of finding error messages in an inferior Erlang buffer."
   (interactive "P")
   (let ((done nil)
-	(buf (and (boundp 'compilation-last-buffer)
-		  compilation-last-buffer)))
+	(buf (or (and (boundp 'next-error-last-buffer)
+		      next-error-last-buffer)
+		 (and (boundp 'compilation-last-buffer)
+		      compilation-last-buffer))))
     (if (and (bufferp buf)
 	     (save-excursion
 	       (set-buffer buf)
@@ -5694,6 +6516,7 @@ The default is to go to the directory of the current buffer."
   (or (inferior-erlang-running-p)
       (error "No inferior Erlang is running"))
   (inferior-erlang-display-buffer)
+  (inferior-erlang-send-empty-cmd-unless-already-at-prompt)
   (inferior-erlang-wait-prompt)
   (inferior-erlang-send-command (format "cd('%s')." dir) nil))
 
@@ -5751,12 +6574,12 @@ sum([], Sum)    -> Sum."
       ;; equal. This is done last-to-first by buffer position, so that
       ;; inserting spaces before one arrow doesn't change the
       ;; positions of the next ones.
-      (mapcar (lambda (arrow-pos)
-		(goto-char arrow-pos)
-		(let* ((pad (- most-indent (erlang-column-number))))
-		  (when (> pad 0)
-		    (insert-char ?\  pad))))
-	      arrow-positions))))
+      (mapc (lambda (arrow-pos)
+	      (goto-char arrow-pos)
+	      (let* ((pad (- most-indent (erlang-column-number))))
+		(when (> pad 0)
+		  (insert-char ?\  pad))))
+	    arrow-positions))))
 
 (defun erlang-column-number ()
   "Return the column number of the current position in the buffer.
@@ -5808,6 +6631,12 @@ it assumes that NEWDEF is loaded."
 	  (when (featurep 'advice)
 	    (ad-unadvise 'Man-notify-when-ready)
 	    (ad-unadvise 'set-visited-file-name)))))
+
+
+(defun erlang-string-to-int (string) 
+  (if (fboundp 'string-to-number)
+      (string-to-number string)
+    (funcall (symbol-function 'string-to-int) string)))
 
 ;; The end...
 
