@@ -8,6 +8,13 @@
       ;;(color-theme-twilight)
       ))
 
+;; The uniquify library makes it so that when you visit two files
+;; with the same name in different directories, the buffer names
+;; have the directory name appended to them instead of the silly
+;; hello<2> names you get by default.
+(require 'uniquify)
+(setq uniquify-buffer-name-style 'forward)
+
 ;; set up magit
 ;; (add-to-list 'load-path (expand-file-name "~/.emacs.d/theirs/magit"))
 ;; (require 'magit)

@@ -9,3 +9,4 @@
 ;; personal customizations
 (require 'mwt-global)
 
+(put 'dired-find-alternate-file 'disabled nil)
