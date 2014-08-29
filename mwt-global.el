@@ -8,6 +8,8 @@
       ;;(color-theme-twilight)
       ))
 
+(skewer-setup)
+
 ;; The uniquify library makes it so that when you visit two files
 ;; with the same name in different directories, the buffer names
 ;; have the directory name appended to them instead of the silly
@@ -29,7 +31,7 @@
 (global-set-key (kbd "ESC <down>") 'windmove-down)
 
 ;; Set up ocaml
-(add-to-list 'load-path (expand-file-name "~/.emacs.d/theirs/ocaml-mode-3.05"))
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/theirs/ocaml-mode-3.05"))                     
 (setq auto-mode-alist
       (cons '("\\.ml[iylp]?$" . caml-mode) auto-mode-alist))
 (require 'caml)
@@ -335,8 +337,8 @@
   (load "windows.el")))
 
 ;; Load Steve Yegge's javascript mode
-(autoload 'theirs/js2-mode "js2" nil t)
-(load "theirs/js2.elc")
+;; (autoload 'theirs/js2-mode "js2" nil t)
+;; (load "theirs/js2.elc")
 (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
 (add-to-list 'auto-mode-alist '("\\.jsm$" . js2-mode))
 
