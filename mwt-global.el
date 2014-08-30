@@ -8,7 +8,7 @@
       ;;(color-theme-twilight)
       ))
 
-(skewer-setup)
+;; (skewer-setup)
 
 ;; The uniquify library makes it so that when you visit two files
 ;; with the same name in different directories, the buffer names

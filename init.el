@@ -2,10 +2,17 @@
 ;; Enable backtrace
 ;; (setq debug-on-error t)
 
+(add-to-list 'load-path "~/.emacs.d/theirs")
+
 (when (>= emacs-major-version 24)
   (require 'package)
+  (require 'package-helper)
   (package-initialize)
   (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
+  (with-package js2-mode*
+	      (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode)))
+  (with-package (skewer-mode skewer-repl sgml-mode css-mode js2-mode)
+		(skewer-setup))
   )
 
 ;; Need some place to put elisp packages
