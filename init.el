@@ -23,3 +23,10 @@
 (require 'mwt-global)
 
 (put 'dired-find-alternate-file 'disabled nil)
+
+;; Ahhh, yes, now I can work like I used to in 
+;; Satimage's Smile :) (No pun intended)
+(defun skewer-eval-region (beg end)
+  "Execute the region as JavaScript code in the attached browsers."
+  (interactive "r")
+  (skewer-eval (buffer-substring beg end) #'skewer-post-minibuffer))
