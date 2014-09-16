@@ -8,6 +8,9 @@
       ;;(color-theme-twilight)
       ))
 
+(when (fboundp 'winner-mode)
+  (winner-mode 1))
+
 (skewer-setup)
 
 ;; The uniquify library makes it so that when you visit two files
