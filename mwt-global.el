@@ -8,6 +8,7 @@
       ;;(color-theme-twilight)
       ))
 
+;; Let's you undo and redo windo config with C-c left and C-c right
 (when (fboundp 'winner-mode)
   (winner-mode 1))
 
