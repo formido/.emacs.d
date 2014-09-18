@@ -8,7 +8,9 @@
       ;;(color-theme-twilight)
       ))
 
-;; (skewer-setup)
+;; Lets you undo and redo window config with C-c left and C-c right
+(when (fboundp 'winner-mode)
+  (winner-mode 1))
 
 ;; The uniquify library makes it so that when you visit two files
 ;; with the same name in different directories, the buffer names
@@ -341,6 +343,7 @@
 ;; (load "theirs/js2.elc")
 (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
 (add-to-list 'auto-mode-alist '("\\.jsm$" . js2-mode))
+(setq-default js2-basic-offset 2)
 
 ;; Load MozlRepl
 ;;(autoload 'moz-minor-mode "moz" "Mozilla Minor and Inferior Mozilla Modes" t)
