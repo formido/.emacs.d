@@ -345,6 +345,7 @@
 ;; (load "theirs/js2.elc")
 (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
 (add-to-list 'auto-mode-alist '("\\.jsm$" . js2-mode))
+(setq-default js2-basic-offset 2)
 
 ;; Load MozlRepl
 ;;(autoload 'moz-minor-mode "moz" "Mozilla Minor and Inferior Mozilla Modes" t)
