@@ -11,6 +11,7 @@
   (package-initialize)
   (with-package magit*)
   (with-package simple-httpd)
+  (with-package gist)
   (with-package js2-mode*
 	      (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode)))
   (with-package (skewer-mode* skewer-repl* sgml-mode* css-mode*)
@@ -32,3 +33,7 @@
   "Execute the region as JavaScript code in the attached browsers."
   (interactive "r")
   (skewer-eval (buffer-substring beg end) #'skewer-post-minibuffer))
+
+(add-hook 'sql-interactive-mode-hook
+	  (lambda ()
+	    (toggle-truncate-lines t)))
