@@ -11,7 +11,7 @@
   (package-initialize)
   (with-package magit*)
   (with-package simple-httpd)
-  (with-package gist)
+  (with-package gist*)
   (with-package web-mode*
     (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
     (defun web-mode-hooks ()
